@@ -25,69 +25,65 @@ class AuthController extends GetxController {
     currentUser.value = _authService.getCurrentUser();
   }
 
-  void login() {
+  void login() async {
     if (!loginFormKey.currentState!.validate()) return;
 
     isLoading.value = true;
-    Future.delayed(const Duration(milliseconds: 800), () {
-      final result = _authService.login(
-        email: loginEmailController.text,
-        password: loginPasswordController.text,
-      );
+    final result = await _authService.login(
+      email: loginEmailController.text,
+      password: loginPasswordController.text,
+    );
 
-      isLoading.value = false;
+    isLoading.value = false;
 
-      if (result.success) {
-        currentUser.value = result.user;
-        _clearLoginFields();
-        if (result.user!.role == 'admin') {
-          Get.offAllNamed(AppRoutes.adminNav);
-        } else {
-          Get.offAllNamed(AppRoutes.userNav);
-        }
+    if (result.success) {
+      currentUser.value = result.user;
+      _clearLoginFields();
+      if (result.user!.role == 'admin') {
+        Get.offAllNamed(AppRoutes.adminNav);
       } else {
-        Get.snackbar(
-          'Error',
-          result.message,
-          backgroundColor: Colors.red.withValues(alpha: 0.2),
-          colorText: Colors.red,
-          snackPosition: SnackPosition.TOP,
-          borderRadius: 16,
-          margin: const EdgeInsets.all(16),
-        );
+        Get.offAllNamed(AppRoutes.userNav);
       }
-    });
+    } else {
+      Get.snackbar(
+        'Error',
+        result.message,
+        backgroundColor: Colors.red.withValues(alpha: 0.2),
+        colorText: Colors.red,
+        snackPosition: SnackPosition.TOP,
+        borderRadius: 16,
+        margin: const EdgeInsets.all(16),
+      );
+    }
   }
 
-  void register() {
+  void register() async {
     if (!registerFormKey.currentState!.validate()) return;
 
     isLoading.value = true;
-    Future.delayed(const Duration(milliseconds: 800), () {
-      final result = _authService.register(
-        email: registerEmailController.text,
-        password: registerPasswordController.text,
-        name: registerNameController.text,
+    final result = await _authService.register(
+      email: registerEmailController.text,
+      password: registerPasswordController.text,
+      name: registerNameController.text,
+    );
+
+    isLoading.value = false;
+
+    if (result.success) {
+      currentUser.value = result.user;
+      _clearRegisterFields();
+      Get.offAllNamed(AppRoutes.userNav);
+    } else {
+      Get.snackbar(
+        'Error',
+        result.message,
+        backgroundColor: Colors.red.withValues(alpha: 0.2),
+        colorText: Colors.red,
+        snackPosition: SnackPosition.TOP,
+        borderRadius: 16,
+        margin: const EdgeInsets.all(16),
       );
-
-      isLoading.value = false;
-
-      if (result.success) {
-        currentUser.value = result.user;
-        _clearRegisterFields();
-        Get.offAllNamed(AppRoutes.userNav);
-      } else {
-        Get.snackbar(
-          'Error',
-          result.message,
-          backgroundColor: Colors.red.withValues(alpha: 0.2),
-          colorText: Colors.red,
-          snackPosition: SnackPosition.TOP,
-          borderRadius: 16,
-          margin: const EdgeInsets.all(16),
-        );
-      }
-    });
+    }
   }
 
   void logout() {

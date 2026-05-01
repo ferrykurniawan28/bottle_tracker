@@ -30,10 +30,6 @@ class BottleCard extends StatelessWidget {
         return Icons.liquor_rounded;
       case 'wine':
         return Icons.wine_bar_rounded;
-      case 'beer':
-        return Icons.sports_bar_rounded;
-      case 'rum':
-        return Icons.local_drink_rounded;
       case 'tequila':
         return Icons.nightlife_rounded;
       default:

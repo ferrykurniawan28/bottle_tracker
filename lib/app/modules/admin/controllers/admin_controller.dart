@@ -50,12 +50,12 @@ class AdminController extends GetxController {
     loadData();
   }
 
-  void loadData() {
+  void loadData() async {
     catalogBottles.value = _bottleService.getCatalogBottles();
     allStoredBottles.value = _bottleService.getAllBottles();
-    final users = _authService.getAllUsers();
-    allUsers.value = users;
-    filteredUsers.value = users;
+    final result = await _authService.getAllUsers();
+    allUsers.value = result.users ?? [];
+    filteredUsers.value = result.users ?? [];
     currentPage.value = 0;
   }
 
@@ -185,12 +185,13 @@ class AdminController extends GetxController {
 
   // ── Search ──
 
-  void searchByUserId() {
+  void searchByUserId() async {
     final query = searchController.text.trim();
     if (query.isEmpty) return;
 
     hasSearched.value = true;
-    final users = _authService.getAllUsers();
+    final result = await _authService.getAllUsers();
+    final users = result.users ?? [];
     final matchedUsers = users.where(
       (u) =>
           u.uniqueCode.toLowerCase().contains(query.toLowerCase()) ||
@@ -271,8 +272,8 @@ class AdminController extends GetxController {
 
   // ── Users ──
 
-  void deleteUser(String userId) {
-    _authService.deleteUser(userId);
+  void deleteUser(String userId) async {
+    await _authService.deleteUser(userId);
     _bottleService.deleteBottlesByUserId(userId);
     loadData();
     searchUsers();
@@ -349,7 +350,7 @@ class AdminController extends GetxController {
               const SizedBox(height: 12),
               Obx(
                 () => DropdownButtonFormField<String>(
-                  value: selectedCategory.value,
+                  initialValue: selectedCategory.value,
                   decoration: InputDecoration(
                     labelText: 'Category',
                     labelStyle: const TextStyle(color: Color(0xFF9D9DB5)),

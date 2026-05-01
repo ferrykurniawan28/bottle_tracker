@@ -1,36 +1,23 @@
 import 'dart:convert';
-import 'dart:math';
+import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:uuid/uuid.dart';
 import '../models/user_model.dart';
+import '../models/api_respon.dart';
 import '../../core/constants/app_constants.dart';
 
 class AuthService {
   final _storage = GetStorage();
-  final _uuid = const Uuid();
+  late final Dio _dio;
 
-  String _generateUniqueCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    final rng = Random();
-    return String.fromCharCodes(
-      Iterable.generate(
-        AppConstants.uniqueCodeLength,
-        (_) => chars.codeUnitAt(rng.nextInt(chars.length)),
+  AuthService() {
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: URLs.apiBaseUrl,
+        contentType: Headers.jsonContentType,
+        responseType: ResponseType.json,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
       ),
-    );
-  }
-
-  List<UserModel> _getUsers() {
-    final data = _storage.read<String>(AppConstants.usersKey);
-    if (data == null) return [];
-    final list = jsonDecode(data) as List;
-    return list.map((e) => UserModel.fromJson(e)).toList();
-  }
-
-  void _saveUsers(List<UserModel> users) {
-    _storage.write(
-      AppConstants.usersKey,
-      jsonEncode(users.map((e) => e.toJson()).toList()),
     );
   }
 
@@ -48,73 +35,230 @@ class AuthService {
     }
   }
 
-  ({bool success, String message, UserModel? user}) register({
+  Future<({bool success, String message, UserModel? user})> register({
     required String email,
     required String password,
     required String name,
-  }) {
-    final users = _getUsers();
+  }) async {
+    try {
+      final response = await _dio.post(
+        URLs.registerEndpoint,
+        queryParameters: {
+          'username': name,
+          'email': email,
+          'password': password,
+        },
+      );
 
-    if (users.any((u) => u.email == email.toLowerCase().trim())) {
-      return (success: false, message: 'Email already registered', user: null);
+      if (response.statusCode == 200) {
+        final apiResponse = ApiRespon(
+          success: response.data['success'] ?? true,
+          message: response.data['message'],
+          data: response.data['data'],
+          error: response.data['error'],
+        );
+
+        if (apiResponse.success && apiResponse.data != null) {
+          final user = UserModel.fromJson(
+            apiResponse.data as Map<String, dynamic>,
+          );
+          setCurrentUser(user);
+          return (
+            success: true,
+            message: apiResponse.message ?? 'Registration successful',
+            user: user,
+          );
+        } else {
+          return (
+            success: false,
+            message:
+                apiResponse.error ??
+                apiResponse.message ??
+                'Registration failed',
+            user: null,
+          );
+        }
+      } else {
+        return (success: false, message: 'Registration failed', user: null);
+      }
+    } on DioException catch (e) {
+      String message = 'Registration failed';
+      if (e.response != null) {
+        final errorData = e.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          message = errorData['message'];
+        }
+      } else {
+        message = 'Network error: ${e.message}';
+      }
+      return (success: false, message: message, user: null);
+    } catch (e) {
+      return (success: false, message: 'Error: ${e.toString()}', user: null);
     }
-
-    final user = UserModel(
-      id: _uuid.v4(),
-      email: email.toLowerCase().trim(),
-      password: password,
-      name: name.trim(),
-      uniqueCode: _generateUniqueCode(),
-      role: 'user',
-    );
-
-    users.add(user);
-    _saveUsers(users);
-    setCurrentUser(user);
-
-    return (success: true, message: 'Registration successful', user: user);
   }
 
-  ({bool success, String message, UserModel? user}) login({
+  Future<({bool success, String message, UserModel? user})> login({
     required String email,
     required String password,
-  }) {
-    if (email.toLowerCase().trim() == AppConstants.adminEmail &&
-        password == AppConstants.adminPassword) {
-      final admin = UserModel(
-        id: 'admin-001',
-        email: AppConstants.adminEmail,
-        password: AppConstants.adminPassword,
-        name: 'Admin',
-        uniqueCode: 'ADMIN',
-        role: 'admin',
+  }) async {
+    try {
+      final response = await _dio.post(
+        URLs.loginEndpoint,
+        queryParameters: {'email': email, 'password': password},
       );
-      setCurrentUser(admin);
-      return (success: true, message: 'Welcome Admin', user: admin);
+
+      if (response.statusCode == 200) {
+        final apiResponse = ApiRespon(
+          success: response.data['success'] ?? true,
+          message: response.data['message'],
+          data: response.data['data'],
+          error: response.data['error'],
+        );
+
+        print('Login API Response: ${response.data}');
+        print(
+          'Parsed ApiRespon: success=${apiResponse.success}, message=${apiResponse.message}, error=${apiResponse.error}',
+        );
+
+        if (apiResponse.success && apiResponse.data != null) {
+          final user = UserModel.fromJson(
+            apiResponse.data as Map<String, dynamic>,
+          );
+          setCurrentUser(user);
+          return (
+            success: true,
+            message: apiResponse.message ?? 'Login successful',
+            user: user,
+          );
+        } else {
+          return (
+            success: false,
+            message: apiResponse.error ?? apiResponse.message ?? 'Login failed',
+            user: null,
+          );
+        }
+      } else {
+        return (success: false, message: 'Login failed', user: null);
+      }
+    } on DioException catch (e) {
+      String message = 'Login failed';
+      if (e.response != null) {
+        final errorData = e.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          message = errorData['message'];
+        }
+      } else {
+        message = 'Network error: ${e.message}';
+      }
+      print('DioException: ${e.toString()}');
+      return (success: false, message: message, user: null);
+    } catch (e) {
+      print('Exception: ${e.toString()}');
+      return (success: false, message: 'Error: ${e.toString()}', user: null);
     }
+  }
 
-    final users = _getUsers();
-    final user = users.where(
-      (u) => u.email == email.toLowerCase().trim() && u.password == password,
-    );
+  // get all users (for admin)
+  Future<({bool success, String message, List<UserModel>? users})>
+  getAllUsers() async {
+    try {
+      final response = await _dio.get(URLs.usersEndpoint);
 
-    if (user.isEmpty) {
-      return (success: false, message: 'Invalid email or password', user: null);
+      if (response.statusCode == 200) {
+        final apiResponse = ApiRespon(
+          success: response.data['success'] ?? true,
+          message: response.data['message'],
+          data: response.data['data'],
+          error: response.data['error'],
+        );
+
+        if (apiResponse.success && apiResponse.data != null) {
+          final usersList = (apiResponse.data as List)
+              .map((user) => UserModel.fromJson(user as Map<String, dynamic>))
+              .toList();
+          return (
+            success: true,
+            message: apiResponse.message ?? 'Users fetched successfully',
+            users: usersList,
+          );
+        } else {
+          return (
+            success: false,
+            message:
+                apiResponse.error ??
+                apiResponse.message ??
+                'Failed to fetch users',
+            users: null,
+          );
+        }
+      } else {
+        return (success: false, message: 'Failed to fetch users', users: null);
+      }
+    } on DioException catch (e) {
+      String message = 'Failed to fetch users';
+      if (e.response != null) {
+        final errorData = e.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          message = errorData['message'];
+        }
+      } else {
+        message = 'Network error: ${e.message}';
+      }
+      return (success: false, message: message, users: null);
+    } catch (e) {
+      return (success: false, message: 'Error: ${e.toString()}', users: null);
     }
+  }
 
-    setCurrentUser(user.first);
-    return (success: true, message: 'Login successful', user: user.first);
+  // delete user by id (for admin)
+  Future<({bool success, String message})> deleteUser(String userId) async {
+    try {
+      final response = await _dio.delete(
+        URLs.deleteUserEndpoint.replaceAll('{id}', userId),
+      );
+
+      if (response.statusCode == 200) {
+        final apiResponse = ApiRespon(
+          success: response.data['success'] ?? true,
+          message: response.data['message'],
+          data: response.data['data'],
+          error: response.data['error'],
+        );
+
+        if (apiResponse.success) {
+          return (
+            success: true,
+            message: apiResponse.message ?? 'User deleted successfully',
+          );
+        } else {
+          return (
+            success: false,
+            message:
+                apiResponse.error ??
+                apiResponse.message ??
+                'Failed to delete user',
+          );
+        }
+      } else {
+        return (success: false, message: 'Failed to delete user');
+      }
+    } on DioException catch (e) {
+      String message = 'Failed to delete user';
+      if (e.response != null) {
+        final errorData = e.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          message = errorData['message'];
+        }
+      } else {
+        message = 'Network error: ${e.message}';
+      }
+      return (success: false, message: message);
+    } catch (e) {
+      return (success: false, message: 'Error: ${e.toString()}');
+    }
   }
 
   void logout() {
     setCurrentUser(null);
-  }
-
-  List<UserModel> getAllUsers() => _getUsers();
-
-  void deleteUser(String userId) {
-    final users = _getUsers();
-    users.removeWhere((u) => u.id == userId);
-    _saveUsers(users);
   }
 }

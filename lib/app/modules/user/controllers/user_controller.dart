@@ -93,7 +93,8 @@ class UserController extends GetxController {
     );
     if (bottle != null) {
       // Find which user owns this bottle
-      final user = _authService.getAllUsers().firstWhereOrNull(
+      final user = (_authService.getAllUsers() as List)
+          .firstWhereOrNull(
         (u) => u.id == bottle.userId,
       );
 
