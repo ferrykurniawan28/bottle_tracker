@@ -7,7 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:get/get.dart';
 
 class BottleCard extends StatelessWidget {
-  final BottleModel bottle;
+  final StoredModel bottle;
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
   final VoidCallback? onEdit;
@@ -23,7 +23,7 @@ class BottleCard extends StatelessWidget {
   });
 
   IconData _getCategoryIcon() {
-    switch (bottle.category.toLowerCase()) {
+    switch (bottle.category?.toLowerCase()) {
       case 'whiskey':
         return Icons.local_bar_rounded;
       case 'vodka':
@@ -38,8 +38,8 @@ class BottleCard extends StatelessWidget {
   }
 
   Color _getStatusColor() {
-    if (!bottle.hasBeenTouched) return AppColors.success;
-    if (bottle.weightDifference > 100) return AppColors.error;
+    // Green if stored, yellow/warning if no weight recorded
+    if (bottle.weight != null) return AppColors.success;
     return AppColors.warning;
   }
 
@@ -78,7 +78,7 @@ class BottleCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      bottle.name,
+                      bottle.bottleName,
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -87,7 +87,7 @@ class BottleCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${bottle.brand} · ${bottle.category}',
+                      '${bottle.brand} · ${bottle.category ?? 'Uncategorized'}',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -96,16 +96,10 @@ class BottleCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        _WeightChip(
-                          label: '${bottle.weightGrams.toStringAsFixed(0)}g',
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 6),
-                        if (bottle.currentWeightGrams != null)
+                        if (bottle.weight != null)
                           _WeightChip(
-                            label:
-                                '${bottle.currentWeightGrams!.toStringAsFixed(0)}g now',
-                            color: statusColor,
+                            label: '${bottle.weight!.toStringAsFixed(0)}g',
+                            color: AppColors.primary,
                           ),
                       ],
                     ),
@@ -185,7 +179,7 @@ class BottleCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      DateFormat('dd MMM').format(bottle.storedAt),
+                      DateFormat('dd MMM').format(bottle.createdAt),
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         color: AppColors.textHint,
@@ -220,7 +214,7 @@ class BottleCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                bottle.name,
+                bottle.bottleName,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   color: AppColors.textSecondary,
@@ -234,7 +228,7 @@ class BottleCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: QrImageView(
-                  data: bottle.id,
+                  data: bottle.id.toString(),
                   version: QrVersions.auto,
                   size: 200.0,
                 ),

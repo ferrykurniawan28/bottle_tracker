@@ -8,6 +8,7 @@ class UserModel {
   final String uniqueCode;
   final String role;
   final DateTime createdAt;
+  String? fcmToken;
 
   UserModel({
     required this.id,
@@ -17,6 +18,7 @@ class UserModel {
     required this.uniqueCode,
     this.role = 'user',
     DateTime? createdAt,
+    this.fcmToken,
   }) : createdAt = createdAt ?? DateTime.now();
 
   static DateTime _parseDateTime(dynamic dateValue) {
@@ -50,20 +52,23 @@ class UserModel {
     'uniqueCode': uniqueCode,
     'role': role,
     'createdAt': createdAt.toIso8601String(),
+    'fcmToken': fcmToken,
   };
 
-  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-    id: json['id'].toString(),
-    email: json['email'],
-    password: json['password'],
-    name: json['name'],
-    uniqueCode: json['uniqueCode'].toString(),
-    role: json['role'] ?? 'user',
-    createdAt: _parseDateTime(json['createdAt']),
-  );
+  factory UserModel.fromJson(Map<String, dynamic> json, void param1) =>
+      UserModel(
+        id: json['id'].toString(),
+        email: json['email'],
+        password: json['password'],
+        name: json['name'],
+        uniqueCode: json['uniqueCode'].toString(),
+        role: json['role'] ?? 'user',
+        createdAt: _parseDateTime(json['createdAt']),
+        fcmToken: json['fcmToken'],
+      );
 
   String toJsonString() => jsonEncode(toJson());
 
   factory UserModel.fromJsonString(String str) =>
-      UserModel.fromJson(jsonDecode(str));
+      UserModel.fromJson(jsonDecode(str), null);
 }

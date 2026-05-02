@@ -76,7 +76,6 @@ class AdminSearchView extends GetView<AdminController> {
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
                                 borderRadius: BorderRadius.circular(16),
-                                
                               ),
                               child: const Icon(
                                 Icons.search_rounded,
@@ -206,13 +205,7 @@ class AdminSearchView extends GetView<AdminController> {
                           ...controller.searchResults.map(
                             (bottle) => Padding(
                               padding: const EdgeInsets.only(bottom: 12),
-                              child: BottleCard(
-                                bottle: bottle,
-                                showActions: !bottle.isReturned,
-                                onEdit: !bottle.isReturned
-                                    ? () => controller.putBackBottle(bottle)
-                                    : null,
-                              ),
+                              child: BottleCard(bottle: bottle),
                             ),
                           ),
                         ],

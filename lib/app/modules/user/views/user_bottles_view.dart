@@ -3,39 +3,24 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/shared_widgets.dart';
 import '../../../data/models/device_model.dart';
 import '../controllers/user_controller.dart';
 
 class UserBottlesView extends GetView<UserController> {
   const UserBottlesView({super.key});
 
-  IconData _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'whiskey':
-        return Icons.local_bar_rounded;
-      case 'vodka':
-        return Icons.liquor_rounded;
-      case 'wine':
-        return Icons.wine_bar_rounded;
-      case 'beer':
-        return Icons.sports_bar_rounded;
-      case 'rum':
-        return Icons.local_drink_rounded;
-      case 'tequila':
-        return Icons.nightlife_rounded;
-      default:
-        return Icons.local_bar_rounded;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Obx(() {
-          final catalog = controller.catalogBottles;
+          final devices = controller.allDevices;
           final selectedCount = controller.selectedCatalogIds.length;
+          final weightControllers = <String, TextEditingController>{};
+
+          for (final id in controller.selectedCatalogIds) {
+            weightControllers.putIfAbsent(id, () => TextEditingController());
+          }
 
           return Stack(
             children: [
@@ -67,7 +52,7 @@ class UserBottlesView extends GetView<UserController> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Bar Bottles',
+                                    'Bar Devices',
                                     style: GoogleFonts.poppins(
                                       fontSize: 26,
                                       fontWeight: FontWeight.w700,
@@ -75,7 +60,7 @@ class UserBottlesView extends GetView<UserController> {
                                     ),
                                   ),
                                   Text(
-                                    'Select bottles to store',
+                                    'Select devices to store',
                                     style: GoogleFonts.poppins(
                                       fontSize: 12,
                                       color: AppColors.textSecondary,
@@ -104,62 +89,72 @@ class UserBottlesView extends GetView<UserController> {
                             ],
                           ),
                           const SizedBox(height: 24),
-                          SectionHeader(title: 'Available (${catalog.length})'),
+                          Text(
+                            'Available Devices (${devices.length})',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
-                  if (catalog.isEmpty)
+                  if (devices.isEmpty)
                     const SliverFillRemaining(
                       child: EmptyState(
-                        icon: Icons.local_bar_rounded,
-                        title: 'No bottles available',
-                        subtitle: 'The bar hasn\'t added any bottles yet',
+                        icon: Icons.devices_rounded,
+                        title: 'No devices available',
+                        subtitle: 'Check back later for new devices',
                       ),
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate((context, index) {
-                          final bottle = catalog[index];
-                          final isSelected = controller.isSelected(bottle.id);
-
-                          return _CatalogCard(
-                            bottle: bottle,
-                            isSelected: isSelected,
-                            categoryIcon: _getCategoryIcon(bottle.category),
-                            onTap: () => controller.toggleSelection(bottle.id),
+                          final device = devices[index];
+                          final isSelected = controller.isSelected(
+                            device.id.toString(),
                           );
-                        }, childCount: catalog.length),
+
+                          return _DeviceCard(
+                            device: device,
+                            isSelected: isSelected,
+                            onTap: () => controller.toggleSelection(
+                              device.id.toString(),
+                            ),
+                          );
+                        }, childCount: devices.length),
                       ),
                     ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 120)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
                 ],
               ),
-              // Store button
               if (selectedCount > 0)
                 Positioned(
+                  bottom: 24,
                   left: 24,
                   right: 24,
-                  bottom: 16,
-                  child: GestureDetector(
-                    onTap: () => _showWeightDialog(context),
-                    child: Container(
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(18),
+                  child: ElevatedButton(
+                    onPressed: () => _showWeightDialog(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Center(
-                        child: Text(
-                          'Store $selectedCount bottle${selectedCount > 1 ? 's' : ''}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
+                    ),
+                    child: Text(
+                      'Next ($selectedCount Selected)',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -168,18 +163,6 @@ class UserBottlesView extends GetView<UserController> {
           );
         }),
       ),
-      // floatingActionButton: selectedCount == 0
-      //     ? FloatingActionButton(
-      //         onPressed: controller.scanBottleQR,
-      //         backgroundColor: AppColors.primary,
-      //         child: const Icon(
-      //           Icons.qr_code_scanner_rounded,
-      //           color: Colors.white,
-      //         ),
-      //       )
-      //     : null,
-      // floatingActionButtonAnimator: FloatingActionButtonAnimator.scaling,
-      // floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -192,7 +175,7 @@ class UserBottlesView extends GetView<UserController> {
 
     Get.dialog(
       Dialog(
-        backgroundColor: const Color(0xFF1A1A2E),
+        backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -212,7 +195,7 @@ class UserBottlesView extends GetView<UserController> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Set the weight for each bottle (grams)',
+                  'Set the weight for each device (grams)',
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     color: AppColors.textSecondary,
@@ -220,10 +203,10 @@ class UserBottlesView extends GetView<UserController> {
                 ),
                 const SizedBox(height: 20),
                 ...controller.selectedCatalogIds.map((id) {
-                  final bottle = controller.catalogBottles.firstWhereOrNull(
-                    (b) => b.id == id,
+                  final device = controller.allDevices.firstWhereOrNull(
+                    (d) => d.id.toString() == id,
                   );
-                  if (bottle == null) return const SizedBox();
+                  if (device == null) return const SizedBox();
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 14),
@@ -231,7 +214,7 @@ class UserBottlesView extends GetView<UserController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          bottle.name,
+                          'Device ${device.uid}',
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -269,8 +252,8 @@ class UserBottlesView extends GetView<UserController> {
                       ],
                     ),
                   );
-                }),
-                const SizedBox(height: 8),
+                }).toList(),
+                const SizedBox(height: 24),
                 Row(
                   children: [
                     Expanded(
@@ -295,15 +278,25 @@ class UserBottlesView extends GetView<UserController> {
                         onPressed: () {
                           if (!formKey.currentState!.validate()) return;
 
-                          final weights = <String, double>{};
+                          final bottleData = <String, Map<String, dynamic>>{};
                           for (final entry in weightControllers.entries) {
-                            weights[entry.key] = double.parse(
-                              entry.value.text.trim(),
-                            );
+                            final device = controller.allDevices
+                                .firstWhereOrNull(
+                                  (d) => d.id.toString() == entry.key,
+                                );
+                            if (device != null) {
+                              bottleData[entry.key] = {
+                                'deviceId': device.id,
+                                'name': 'Device ${device.uid}',
+                                'brand': 'Smart',
+                                'category': 'Device',
+                                'weight': double.parse(entry.value.text.trim()),
+                              };
+                            }
                           }
 
                           Get.back();
-                          controller.storeSelectedBottles(weights);
+                          controller.storeSelectedBottles(bottleData);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
@@ -326,16 +319,14 @@ class UserBottlesView extends GetView<UserController> {
   }
 }
 
-class _CatalogCard extends StatelessWidget {
-  final CatalogBottle bottle;
+class _DeviceCard extends StatelessWidget {
+  final DeviceModel device;
   final bool isSelected;
-  final IconData categoryIcon;
   final VoidCallback onTap;
 
-  const _CatalogCard({
-    required this.bottle,
+  const _DeviceCard({
+    required this.device,
     required this.isSelected,
-    required this.categoryIcon,
     required this.onTap,
   });
 
@@ -369,7 +360,11 @@ class _CatalogCard extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(categoryIcon, color: AppColors.primary, size: 24),
+                child: const Icon(
+                  Icons.devices_rounded,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -377,7 +372,7 @@ class _CatalogCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      bottle.name,
+                      'Device UID: ${device.uid}',
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -386,10 +381,10 @@ class _CatalogCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${bottle.brand} · ${bottle.category}',
+                      device.isUsed ? 'In Use' : 'Available',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: device.isUsed ? Colors.orange : Colors.green,
                       ),
                     ),
                   ],
@@ -397,22 +392,18 @@ class _CatalogCard extends StatelessWidget {
               ),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                width: 28,
-                height: 28,
+                width: 24,
+                height: 24,
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.textHint,
+                    color: isSelected ? AppColors.primary : AppColors.divider,
                     width: 2,
                   ),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: isSelected
-                    ? const Icon(
-                        Icons.check_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      )
+                    ? const Icon(Icons.check, size: 16, color: Colors.white)
                     : null,
               ),
             ],

@@ -19,7 +19,6 @@ class CustomNavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        
       ),
       child: SafeArea(
         top: false,
@@ -31,46 +30,73 @@ class CustomNavBar extends StatelessWidget {
               final isSelected = currentIndex == index;
               final item = items[index];
 
-              return GestureDetector(
-                onTap: () => onTap(index),
-                behavior: HitTestBehavior.opaque,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOut,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
-                        child: Icon(
-                          isSelected ? item.activeIcon : item.icon,
-                          key: ValueKey(isSelected),
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.textHint,
-                          size: 26,
-                        ),
+              return Stack(
+                children: [
+                  GestureDetector(
+                    onTap: () => onTap(index),
+                    behavior: HitTestBehavior.opaque,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
                       ),
-                      const SizedBox(height: 6),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeInOut,
-                        width: isSelected ? 20 : 0,
-                        height: 3,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 250),
+                            child: Icon(
+                              isSelected ? item.activeIcon : item.icon,
+                              key: ValueKey(isSelected),
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.textHint,
+                              size: 26,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                            width: isSelected ? 20 : 0,
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (item.unreadCount != null && item.unreadCount! > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.primary
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(2),
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          item.unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                ],
               );
             }),
           ),
@@ -83,6 +109,11 @@ class CustomNavBar extends StatelessWidget {
 class NavItem {
   final IconData icon;
   final IconData activeIcon;
+  final int? unreadCount;
 
-  const NavItem({required this.icon, required this.activeIcon});
+  const NavItem({
+    required this.icon,
+    required this.activeIcon,
+    this.unreadCount,
+  });
 }

@@ -1,7 +1,7 @@
 class ApiRespon {
   final bool success;
   final String? message;
-  final dynamic? data;
+  final dynamic data;
   final String? error;
 
   ApiRespon({required this.success, this.message, this.data, this.error});

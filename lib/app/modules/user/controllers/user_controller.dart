@@ -6,17 +6,22 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../data/models/stored_model.dart';
 import '../../../data/models/device_model.dart';
-import '../../../data/services/bottle_service.dart';
+import '../../../data/models/user_model.dart';
+import '../../../data/services/device_service.dart';
+import '../../../data/services/stored_service.dart';
 import '../../../data/services/auth_service.dart';
 
 class UserController extends GetxController {
-  final BottleService _bottleService = BottleService();
+  final DeviceService _deviceService = DeviceService();
+  final StoredService _storedService = StoredService();
   final AuthService _authService = AuthService();
 
-  final catalogBottles = <CatalogBottle>[].obs;
-  final storedBottles = <BottleModel>[].obs;
+  final allDevices = <DeviceModel>[].obs;
+  final storedBottles = <StoredModel>[].obs;
   final selectedCatalogIds = <String>{}.obs;
   final currentIndex = 0.obs;
+  final currentUser = Rx<UserModel?>(null);
+  final unreadNotificationsCount = 0.obs;
 
   @override
   void onInit() {
@@ -24,11 +29,20 @@ class UserController extends GetxController {
     loadData();
   }
 
-  void loadData() {
-    catalogBottles.value = _bottleService.getCatalogBottles();
-    final user = _authService.getCurrentUser();
-    if (user != null) {
-      storedBottles.value = _bottleService.getBottlesByUserId(user.id);
+  void loadData() async {
+    final devicesResult = await _deviceService.getAllDevices();
+    allDevices.value = devicesResult.devices ?? [];
+
+    final userResult = await _authService.getAllUsers();
+    if (userResult.users != null && userResult.users!.isNotEmpty) {
+      currentUser.value = userResult.users!.first;
+
+      if (currentUser.value != null) {
+        final storedResult = await _storedService.getStoredByOwner(
+          currentUser.value!.id,
+        );
+        storedBottles.value = storedResult.stored ?? [];
+      }
     }
   }
 
@@ -42,24 +56,28 @@ class UserController extends GetxController {
 
   bool isSelected(String catalogId) => selectedCatalogIds.contains(catalogId);
 
-  void storeSelectedBottles(Map<String, double> weights) {
-    final user = _authService.getCurrentUser();
-    if (user == null) return;
+  void storeSelectedBottles(
+    Map<String, Map<String, dynamic>> bottleData,
+  ) async {
+    if (currentUser.value == null) return;
 
-    for (final catalogId in selectedCatalogIds) {
-      final catalog = catalogBottles.firstWhereOrNull((b) => b.id == catalogId);
-      if (catalog == null) continue;
+    for (final entry in bottleData.entries) {
+      final deviceId = entry.value['deviceId'] as int?;
+      final name = entry.value['name'] as String?;
+      final brand = entry.value['brand'] as String?;
+      final category = entry.value['category'] as String?;
+      final weight = entry.value['weight'] as double?;
 
-      final weight = weights[catalogId];
-      if (weight == null || weight <= 0) continue;
+      if (deviceId == null || name == null || weight == null || weight <= 0)
+        continue;
 
-      _bottleService.storeBottle(
-        userId: user.id,
-        catalogBottleId: catalog.id,
-        name: catalog.name,
-        brand: catalog.brand,
-        category: catalog.category,
-        weightGrams: weight,
+      await _storedService.createStored(
+        deviceUid: deviceId.toString(),
+        ownerUid: currentUser.value!.uniqueCode,
+        bottleName: name,
+        brand: brand ?? '',
+        category: category ?? 'Other',
+        weight: weight,
       );
     }
 
@@ -87,17 +105,10 @@ class UserController extends GetxController {
     });
   }
 
-  void _handleScannedBottle(String bottleId) {
-    final bottle = _bottleService.getAllBottles().firstWhereOrNull(
-      (b) => b.id == bottleId,
-    );
-    if (bottle != null) {
-      // Find which user owns this bottle
-      final user = (_authService.getAllUsers() as List)
-          .firstWhereOrNull(
-        (u) => u.id == bottle.userId,
-      );
-
+  void _handleScannedBottle(String bottleId) async {
+    final deviceResult = await _deviceService.getDeviceByUID(bottleId);
+    if (deviceResult.device != null) {
+      final device = deviceResult.device!;
       Get.dialog(
         Dialog(
           backgroundColor: AppColors.surface,
@@ -124,7 +135,7 @@ class UserController extends GetxController {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Bottle Found',
+                  'Device Found',
                   style: GoogleFonts.poppins(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
@@ -134,12 +145,11 @@ class UserController extends GetxController {
                 const SizedBox(height: 16),
                 const Divider(color: AppColors.divider),
                 const SizedBox(height: 16),
-                _buildInfoRow('Name', bottle.name),
-                _buildInfoRow('Brand', bottle.brand),
-                _buildInfoRow('Owner', user?.name ?? 'Unknown'),
+                _buildInfoRow('Device UID', device.uid),
+                _buildInfoRow('Status', device.isUsed ? 'In Use' : 'Available'),
                 _buildInfoRow(
-                  'Status',
-                  bottle.isReturned ? 'Returned' : 'In Storage',
+                  'Created',
+                  device.createdAt.toString().split(' ')[0],
                 ),
                 const SizedBox(height: 24),
                 CustomButton(text: 'Close', onPressed: () => Get.back()),
@@ -151,7 +161,7 @@ class UserController extends GetxController {
     } else {
       Get.snackbar(
         'Not Found',
-        'No bottle found with this QR code',
+        'No device found with this QR code',
         backgroundColor: Colors.orange.withValues(alpha: 0.2),
         colorText: Colors.orange,
       );

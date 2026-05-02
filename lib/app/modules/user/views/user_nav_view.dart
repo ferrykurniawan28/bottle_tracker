@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/user_controller.dart';
-import 'user_bottles_view.dart';
 import 'user_store_view.dart';
 import 'user_profile_view.dart';
 import '../../../core/widgets/custom_nav_bar.dart';

@@ -1,6 +1,6 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../models/user_model.dart';
 import '../models/api_respon.dart';
 import '../../core/constants/app_constants.dart';
@@ -35,6 +35,23 @@ class AuthService {
     }
   }
 
+  Future<void> _updateFCMTokenOnBackend(String userId) async {
+    try {
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null) {
+        await _dio.post(
+          '/users/$userId/fcm-token',
+          data: {'fcm_token': fcmToken},
+        );
+        // Cache FCM token locally
+        _storage.write('${AppConstants.currentUserKey}_fcm_token', fcmToken);
+      }
+    } catch (e) {
+      // Log but don't fail - FCM is non-critical
+      print('Warning: Could not update FCM token: $e');
+    }
+  }
+
   Future<({bool success, String message, UserModel? user})> register({
     required String email,
     required String password,
@@ -61,8 +78,11 @@ class AuthService {
         if (apiResponse.success && apiResponse.data != null) {
           final user = UserModel.fromJson(
             apiResponse.data as Map<String, dynamic>,
+            null,
           );
           setCurrentUser(user);
+          // Update FCM token on backend after successful registration
+          await _updateFCMTokenOnBackend(user.id.toString());
           return (
             success: true,
             message: apiResponse.message ?? 'Registration successful',
@@ -115,15 +135,14 @@ class AuthService {
           error: response.data['error'],
         );
 
-        print('Login API Response: ${response.data}');
-        print(
-          'Parsed ApiRespon: success=${apiResponse.success}, message=${apiResponse.message}, error=${apiResponse.error}',
-        );
-
         if (apiResponse.success && apiResponse.data != null) {
           final user = UserModel.fromJson(
             apiResponse.data as Map<String, dynamic>,
+            null,
           );
+          // Update FCM token on backend after successful login
+          await _updateFCMTokenOnBackend(user.id.toString());
+
           setCurrentUser(user);
           return (
             success: true,
@@ -150,10 +169,8 @@ class AuthService {
       } else {
         message = 'Network error: ${e.message}';
       }
-      print('DioException: ${e.toString()}');
       return (success: false, message: message, user: null);
     } catch (e) {
-      print('Exception: ${e.toString()}');
       return (success: false, message: 'Error: ${e.toString()}', user: null);
     }
   }
@@ -174,7 +191,10 @@ class AuthService {
 
         if (apiResponse.success && apiResponse.data != null) {
           final usersList = (apiResponse.data as List)
-              .map((user) => UserModel.fromJson(user as Map<String, dynamic>))
+              .map(
+                (user) =>
+                    UserModel.fromJson(user as Map<String, dynamic>, null),
+              )
               .toList();
           return (
             success: true,
@@ -259,6 +279,25 @@ class AuthService {
   }
 
   void logout() {
+    final user = getCurrentUser();
+    if (user != null) {
+      // Delete FCM token from backend
+      try {
+        _dio.delete('/users/${user.id}/fcm-token');
+      } catch (e) {
+        // print('Warning: Could not delete FCM token from backend: $e');
+      }
+
+      // Unsubscribe from Firebase topic
+      try {
+        FirebaseMessaging.instance.unsubscribeFromTopic('user_${user.id}');
+      } catch (e) {
+        // print('Warning: Could not unsubscribe from FCM topic: $e');
+      }
+    }
+
+    // Clear local user data
     setCurrentUser(null);
+    _storage.remove('${AppConstants.currentUserKey}_fcm_token');
   }
 }

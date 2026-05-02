@@ -3,8 +3,6 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/shared_widgets.dart';
-import '../../../core/widgets/custom_button.dart';
 import '../controllers/admin_controller.dart';
 import '../../auth/controllers/auth_controller.dart';
 
@@ -38,8 +36,11 @@ class AdminUsersView extends GetView<AdminController> {
                               color: AppColors.secondary,
                               borderRadius: BorderRadius.circular(14),
                             ),
-                            child: const Icon(Icons.people_rounded,
-                                color: Colors.white, size: 22),
+                            child: const Icon(
+                              Icons.people_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Text(
@@ -59,8 +60,11 @@ class AdminUsersView extends GetView<AdminController> {
                                 color: AppColors.error.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.logout_rounded,
-                                  color: AppColors.error, size: 20),
+                              child: const Icon(
+                                Icons.logout_rounded,
+                                color: AppColors.error,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ],
@@ -75,8 +79,10 @@ class AdminUsersView extends GetView<AdminController> {
                               style: const TextStyle(color: Colors.white),
                               decoration: InputDecoration(
                                 hintText: 'Search by email or name...',
-                                prefixIcon: const Icon(Icons.search_rounded,
-                                    color: AppColors.textHint),
+                                prefixIcon: const Icon(
+                                  Icons.search_rounded,
+                                  color: AppColors.textHint,
+                                ),
                                 filled: true,
                                 fillColor: AppColors.surfaceLight,
                                 border: OutlineInputBorder(
@@ -102,7 +108,9 @@ class AdminUsersView extends GetView<AdminController> {
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.primary.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(20),
@@ -168,7 +176,8 @@ class AdminUsersView extends GetView<AdminController> {
                         const SizedBox(width: 24),
                         _PageButton(
                           icon: Icons.chevron_right_rounded,
-                          onPressed: (controller.currentPage.value + 1) *
+                          onPressed:
+                              (controller.currentPage.value + 1) *
                                       controller.pageSize <
                                   controller.filteredUsers.length
                               ? controller.nextPage
@@ -192,17 +201,24 @@ class AdminUsersView extends GetView<AdminController> {
       AlertDialog(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Delete User',
-            style: GoogleFonts.poppins(
-                color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+        title: Text(
+          'Delete User',
+          style: GoogleFonts.poppins(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         content: Text(
-            'Delete ${user.name}? This will also remove all their stored bottles.',
-            style: GoogleFonts.poppins(color: AppColors.textSecondary)),
+          'Delete ${user.name}? This will also remove all their stored bottles.',
+          style: GoogleFonts.poppins(color: AppColors.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: Text('Cancel',
-                style: GoogleFonts.poppins(color: AppColors.textHint)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(color: AppColors.textHint),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -212,7 +228,8 @@ class AdminUsersView extends GetView<AdminController> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: Text('Delete', style: GoogleFonts.poppins()),
           ),
@@ -327,8 +344,11 @@ class _UserCard extends StatelessWidget {
                   color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child:
-                    const Icon(Icons.delete_rounded, color: AppColors.error, size: 18),
+                child: const Icon(
+                  Icons.delete_rounded,
+                  color: AppColors.error,
+                  size: 18,
+                ),
               ),
             ),
           ],

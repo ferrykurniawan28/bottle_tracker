@@ -1,7 +1,8 @@
+import 'package:bottle_tracker/app/presentation/screens/notifications_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/admin_controller.dart';
-import 'admin_bottles_view.dart';
+import 'admin_stored_view.dart';
 import 'admin_search_view.dart';
 import 'admin_users_view.dart';
 import '../../../core/widgets/custom_nav_bar.dart';
@@ -14,32 +15,39 @@ class AdminNavView extends GetView<AdminController> {
     final pages = [
       const AdminBottlesView(),
       const AdminSearchView(),
+      const NotificationsScreen(),
       const AdminUsersView(),
     ];
 
-    return Obx(() => Scaffold(
-          body: IndexedStack(
-            index: controller.currentIndex.value,
-            children: pages,
-          ),
-          bottomNavigationBar: CustomNavBar(
-            currentIndex: controller.currentIndex.value,
-            onTap: controller.changeTab,
-            items: const [
-              NavItem(
-                icon: Icons.inventory_2_outlined,
-                activeIcon: Icons.inventory_2_rounded,
-              ),
-              NavItem(
-                icon: Icons.search_outlined,
-                activeIcon: Icons.manage_search_rounded,
-              ),
-              NavItem(
-                icon: Icons.people_outline_rounded,
-                activeIcon: Icons.people_rounded,
-              ),
-            ],
-          ),
-        ));
+    return Obx(
+      () => Scaffold(
+        body: IndexedStack(
+          index: controller.currentIndex.value,
+          children: pages,
+        ),
+        bottomNavigationBar: CustomNavBar(
+          currentIndex: controller.currentIndex.value,
+          onTap: controller.changeTab,
+          items: const [
+            NavItem(
+              icon: Icons.inventory_2_outlined,
+              activeIcon: Icons.inventory_2_rounded,
+            ),
+            NavItem(
+              icon: Icons.search_outlined,
+              activeIcon: Icons.manage_search_rounded,
+            ),
+            NavItem(
+              icon: Icons.notification_important_outlined,
+              activeIcon: Icons.notification_important_rounded,
+            ),
+            NavItem(
+              icon: Icons.people_outline_rounded,
+              activeIcon: Icons.people_rounded,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

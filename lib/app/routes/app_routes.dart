@@ -3,4 +3,6 @@ abstract class AppRoutes {
   static const register = '/register';
   static const userNav = '/user';
   static const adminNav = '/admin';
+  static const notification = '/notification';
+  static const adminDevices = '/admin/devices';
 }

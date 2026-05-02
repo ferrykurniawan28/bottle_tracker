@@ -1,161 +1,76 @@
 import 'dart:convert';
 
-class BottleModel {
-  final String id;
-  final String userId;
-  final String name;
+class StoredModel {
+  final int id;
+  final int deviceId;
+  final int ownerId;
+  final double? weight;
+  final String bottleName;
   final String brand;
-  final String category;
-  final double weightGrams;
-  final double? currentWeightGrams;
-  final String? notes;
-  final DateTime storedAt;
-  final bool isReturned;
+  final String? category;
+  final DateTime createdAt;
 
-  BottleModel({
+  StoredModel({
     required this.id,
-    required this.userId,
-    required this.name,
+    required this.deviceId,
+    required this.ownerId,
+    this.weight,
+    required this.bottleName,
     required this.brand,
-    required this.category,
-    required this.weightGrams,
-    this.currentWeightGrams,
-    this.notes,
-    DateTime? storedAt,
-    this.isReturned = false,
-  }) : storedAt = storedAt ?? DateTime.now();
-
-  double get weightDifference =>
-      currentWeightGrams != null ? weightGrams - currentWeightGrams! : 0;
-
-  bool get hasBeenTouched =>
-      currentWeightGrams != null && currentWeightGrams != weightGrams;
+    this.category,
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
     'id': id,
-    'userId': userId,
-    'name': name,
+    'device_id': deviceId,
+    'owner_id': ownerId,
+    'weight': weight,
+    'bottle_name': bottleName,
     'brand': brand,
     'category': category,
-    'weightGrams': weightGrams,
-    'currentWeightGrams': currentWeightGrams,
-    'notes': notes,
-    'storedAt': storedAt.toIso8601String(),
-    'isReturned': isReturned,
+    'created_at': createdAt.toIso8601String(),
   };
 
-  factory BottleModel.fromJson(Map<String, dynamic> json) => BottleModel(
-    id: json['id'],
-    userId: json['userId'],
-    name: json['name'],
-    brand: json['brand'],
-    category: json['category'],
-    weightGrams: (json['weightGrams'] as num).toDouble(),
-    currentWeightGrams: json['currentWeightGrams'] != null
-        ? (json['currentWeightGrams'] as num).toDouble()
-        : null,
-    notes: json['notes'],
-    storedAt: DateTime.parse(json['storedAt']),
-    isReturned: json['isReturned'] ?? false,
+  factory StoredModel.fromJson(Map<String, dynamic> json) => StoredModel(
+    id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
+    deviceId: json['device_id'] is int
+        ? json['device_id']
+        : int.parse(json['device_id'].toString()),
+    ownerId: json['owner_id'] is int
+        ? json['owner_id']
+        : int.parse(json['owner_id'].toString()),
+    weight: json['weight'] != null ? (json['weight'] as num).toDouble() : null,
+    bottleName: json['bottle_name'].toString(),
+    brand: json['brand'].toString(),
+    category: json['category']?.toString(),
+    createdAt: json['created_at'] is String
+        ? DateTime.parse(json['created_at'])
+        : (json['created_at'] as DateTime),
   );
 
-  BottleModel copyWith({
-    String? id,
-    String? userId,
-    String? name,
+  StoredModel copyWith({
+    int? id,
+    int? deviceId,
+    int? ownerId,
+    double? weight,
+    String? bottleName,
     String? brand,
     String? category,
-    double? weightGrams,
-    double? currentWeightGrams,
-    String? notes,
-    DateTime? storedAt,
-    bool? isReturned,
-  }) => BottleModel(
+    DateTime? createdAt,
+  }) => StoredModel(
     id: id ?? this.id,
-    userId: userId ?? this.userId,
-    name: name ?? this.name,
+    deviceId: deviceId ?? this.deviceId,
+    ownerId: ownerId ?? this.ownerId,
+    weight: weight ?? this.weight,
+    bottleName: bottleName ?? this.bottleName,
     brand: brand ?? this.brand,
     category: category ?? this.category,
-    weightGrams: weightGrams ?? this.weightGrams,
-    currentWeightGrams: currentWeightGrams ?? this.currentWeightGrams,
-    notes: notes ?? this.notes,
-    storedAt: storedAt ?? this.storedAt,
-    isReturned: isReturned ?? this.isReturned,
+    createdAt: createdAt ?? this.createdAt,
   );
 
   String toJsonString() => jsonEncode(toJson());
-  factory BottleModel.fromJsonString(String str) =>
-      BottleModel.fromJson(jsonDecode(str));
+
+  factory StoredModel.fromJsonString(String str) =>
+      StoredModel.fromJson(jsonDecode(str));
 }
-
-// import 'dart:convert';
-
-// class StoredModel {
-//   final int? id;
-//   final int deviceId; // Foreign key to device
-//   final int ownerId; // Foreign key to users
-//   final double? weight; // Current weight (from history)
-//   final String bottleName; // Changed from 'name' to 'bottle_name'
-//   final String brand;
-//   final String? category;
-//   final DateTime? createdAt;
-
-//   StoredModel({
-//     this.id,
-//     required this.deviceId,
-//     required this.ownerId,
-//     this.weight,
-//     required this.bottleName,
-//     required this.brand,
-//     this.category,
-//     this.createdAt,
-//   });
-
-//   Map<String, dynamic> toJson() => {
-//     if (id != null) 'id': id,
-//     'device_id': deviceId,
-//     'owner_id': ownerId,
-//     if (weight != null) 'weight': weight,
-//     'bottle_name': bottleName,
-//     'brand': brand,
-//     if (category != null) 'category': category,
-//     // Don't include createdAt - server will generate
-//   };
-
-//   factory StoredModel.fromJson(Map<String, dynamic> json) => StoredModel(
-//     id: json['id'],
-//     deviceId: json['device_id'],
-//     ownerId: json['owner_id'],
-//     weight: json['weight'] != null ? (json['weight'] as num).toDouble() : null,
-//     bottleName: json['bottle_name'],
-//     brand: json['brand'],
-//     category: json['category'],
-//     createdAt: json['created_at'] != null
-//         ? DateTime.parse(json['created_at'])
-//         : null,
-//   );
-
-//   StoredModel copyWith({
-//     int? id,
-//     int? deviceId,
-//     int? ownerId,
-//     double? weight,
-//     String? bottleName,
-//     String? brand,
-//     String? category,
-//     DateTime? createdAt,
-//   }) => StoredModel(
-//     id: id ?? this.id,
-//     deviceId: deviceId ?? this.deviceId,
-//     ownerId: ownerId ?? this.ownerId,
-//     weight: weight ?? this.weight,
-//     bottleName: bottleName ?? this.bottleName,
-//     brand: brand ?? this.brand,
-//     category: category ?? this.category,
-//     createdAt: createdAt ?? this.createdAt,
-//   );
-
-//   String toJsonString() => jsonEncode(toJson());
-//   factory StoredModel.fromJsonString(String str) =>
-//       StoredModel.fromJson(jsonDecode(str));
-// }

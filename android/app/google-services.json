@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "250344648976",
+    "project_id": "bottly-c417e",
+    "storage_bucket": "bottly-c417e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:250344648976:android:c2540cc32d1ddcf2e5f595",
+        "android_client_info": {
+          "package_name": "com.example.bottle_tracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0ER93fukrj9CJyc_9PMXx8QVduFkeODM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
