@@ -161,7 +161,7 @@ class UserController extends GetxController {
                 CustomButton(
                   text: 'Use',
                   onPressed: () => _handleUsedDevice(device.uid),
-                  color: Color(0xFF4CAF50),
+                  color: AppColors.primary,
                 ),
                 const SizedBox(height: 24),
                 CustomButton(

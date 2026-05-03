@@ -507,4 +507,50 @@ class StoredService {
       return (success: false, message: 'Error: ${e.toString()}', count: null);
     }
   }
+
+  // Finish stored
+  Future<({bool success, String message})> finishStored(int storedId) async {
+    try {
+      final response = await _dio.put('/stored/finish/$storedId');
+
+      if (response.statusCode == 200) {
+        final apiResponse = ApiRespon(
+          success: response.data['success'] ?? true,
+          message: response.data['message'],
+          data: response.data['data'],
+          error: response.data['error'],
+        );
+
+        if (apiResponse.success) {
+          return (
+            success: true,
+            message: apiResponse.message ?? 'Stored finished successfully',
+          );
+        } else {
+          return (
+            success: false,
+            message:
+                apiResponse.error ??
+                apiResponse.message ??
+                'Failed to finish stored',
+          );
+        }
+      } else {
+        return (success: false, message: 'Failed to finish stored');
+      }
+    } on DioException catch (e) {
+      String message = 'Failed to finish stored';
+      if (e.response != null) {
+        final errorData = e.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          message = errorData['message'];
+        }
+      } else {
+        message = 'Network error: ${e.message}';
+      }
+      return (success: false, message: message);
+    } catch (e) {
+      return (success: false, message: 'Error: ${e.toString()}');
+    }
+  }
 }

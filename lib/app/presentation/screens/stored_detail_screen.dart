@@ -65,6 +65,36 @@ class _StoredDetailScreenState extends State<StoredDetailScreen> {
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         title: const Text('Stored Detail'),
+        actions: [
+          // if user want to finish the stored, they can tap this button to mark it as finished
+          if (stored != null && stored.isActive)
+            IconButton(
+              icon: const Icon(Icons.check_circle_outline_rounded),
+              onPressed: () {
+                Get.defaultDialog(
+                  title: 'Finish Stored',
+                  middleText:
+                      'Are you sure you want to mark this stored as finished? This action cannot be undone.',
+                  textCancel: 'Cancel',
+                  textConfirm: 'Finish',
+                  confirmTextColor: Colors.white,
+                  buttonColor: AppColors.primary,
+                  cancelTextColor: Colors.white,
+                  onConfirm: () async {
+                    final result = await _storedService.finishStored(stored.id);
+                    if (result.success) {
+                      Get.back();
+                      setState(() {
+                        _stored = _stored!.copyWith(isActive: false);
+                      });
+                    } else {
+                      Get.snackbar('Error', result.message);
+                    }
+                  },
+                );
+              },
+            ),
+        ],
       ),
       body: stored == null
           ? Center(
@@ -226,12 +256,12 @@ class _DetailHeaderCard extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _Badge(
-                      label: stored.weight != null
-                          ? '${stored.weight!.toStringAsFixed(0)} g'
-                          : 'No weight',
-                      color: statusColor,
-                    ),
+                    // _Badge(
+                    //   label: stored.weight != null
+                    //       ? '${stored.weight!.toStringAsFixed(0)} g'
+                    //       : 'No weight',
+                    //   color: statusColor,
+                    // ),
                     _Badge(
                       label: stored.isActive ? 'Active' : 'Inactive',
                       color: stored.isActive
@@ -334,7 +364,7 @@ class _HistoryTile extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      '${entry.weight.toStringAsFixed(0)} g',
+                      '${entry.weight.toStringAsFixed(0)} ml',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -363,16 +393,16 @@ class _HistoryTile extends StatelessWidget {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                if (entry.note != null && entry.note!.trim().isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    entry.note!,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+                // if (entry.note != null && entry.note!.trim().isNotEmpty) ...[
+                //   const SizedBox(height: 8),
+                //   Text(
+                //     entry.note!,
+                //     style: GoogleFonts.poppins(
+                //       fontSize: 12,
+                //       color: AppColors.textSecondary,
+                //     ),
+                //   ),
+                // ],
               ],
             ),
           ),

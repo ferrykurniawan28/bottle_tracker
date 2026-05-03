@@ -38,8 +38,8 @@ class BottleCard extends StatelessWidget {
   }
 
   Color _getStatusColor() {
-    // Green if stored, yellow/warning if no weight recorded
-    if (bottle.weight != null) return AppColors.success;
+    if (!bottle.isActive) return AppColors.error;
+    // if(bottle.category != null) return AppColors.primary;
     return AppColors.success;
   }
 
@@ -96,15 +96,15 @@ class BottleCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        if (bottle.weight != null)
-                          _WeightChip(
-                            label: '${bottle.weight!.toStringAsFixed(0)}g',
-                            color: AppColors.primary,
-                          ),
-                      ],
-                    ),
+                    // Row(
+                    //   children: [
+                    //     if (bottle.weight != null)
+                    //       _WeightChip(
+                    //         label: '${bottle.weight!.toStringAsFixed(0)}g',
+                    //         color: AppColors.primary,
+                    //       ),
+                    //   ],
+                    // ),
                   ],
                 ),
               ),
