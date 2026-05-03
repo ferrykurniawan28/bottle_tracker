@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../models/stored_model.dart';
+import '../models/stored_weight_history_model.dart';
 import '../models/api_respon.dart';
 import '../../core/constants/app_constants.dart';
 
@@ -16,6 +17,59 @@ class StoredService {
         receiveTimeout: const Duration(seconds: 30),
       ),
     );
+  }
+
+  // Get stored by id
+  Future<({bool success, String message, StoredModel? stored})> getStoredById(
+    int storedId,
+  ) async {
+    try {
+      final response = await _dio.get('/stored/$storedId');
+
+      if (response.statusCode == 200) {
+        final apiResponse = ApiRespon(
+          success: response.data['success'] ?? true,
+          message: response.data['message'],
+          data: response.data['data'],
+          error: response.data['error'],
+        );
+
+        if (apiResponse.success && apiResponse.data != null) {
+          final stored = StoredModel.fromJson(
+            apiResponse.data as Map<String, dynamic>,
+          );
+          return (
+            success: true,
+            message: apiResponse.message ?? 'Stored fetched successfully',
+            stored: stored,
+          );
+        }
+
+        return (
+          success: false,
+          message:
+              apiResponse.error ??
+              apiResponse.message ??
+              'Failed to fetch stored',
+          stored: null,
+        );
+      }
+
+      return (success: false, message: 'Failed to fetch stored', stored: null);
+    } on DioException catch (e) {
+      String message = 'Failed to fetch stored';
+      if (e.response != null) {
+        final errorData = e.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          message = errorData['message'];
+        }
+      } else {
+        message = 'Network error: ${e.message}';
+      }
+      return (success: false, message: message, stored: null);
+    } catch (e) {
+      return (success: false, message: 'Error: ${e.toString()}', stored: null);
+    }
   }
 
   // Create stored bottle
@@ -87,6 +141,101 @@ class StoredService {
       return (success: false, message: message, stored: null);
     } catch (e) {
       return (success: false, message: 'Error: ${e.toString()}', stored: null);
+    }
+  }
+
+  // Get stored weight history by stored id
+  Future<
+    ({
+      bool success,
+      String message,
+      StoredModel? stored,
+      List<StoredWeightHistoryModel>? history,
+    })
+  >
+  getWeightHistoryByStoredId(int storedId) async {
+    try {
+      final response = await _dio.get(
+        '/stored/$storedId/weight-history/details',
+      );
+
+      print('Response data: ${response.data}'); // Debug log
+
+      if (response.statusCode == 200) {
+        final apiResponse = ApiRespon(
+          success: response.data['success'] ?? true,
+          message: response.data['message'],
+          data: response.data['data'],
+          error: response.data['error'],
+        );
+
+        if (apiResponse.success && apiResponse.data != null) {
+          // Extract stored and history from data
+          final storedData =
+              apiResponse.data['stored'] as Map<String, dynamic>?;
+          final historyListData = apiResponse.data['history'] as List?;
+
+          StoredModel? stored;
+          if (storedData != null) {
+            stored = StoredModel.fromJson(storedData);
+          }
+
+          List<StoredWeightHistoryModel>? history;
+          if (historyListData != null) {
+            history = historyListData
+                .map(
+                  (item) => StoredWeightHistoryModel.fromJson(
+                    item as Map<String, dynamic>,
+                  ),
+                )
+                .toList();
+          }
+
+          return (
+            success: true,
+            message:
+                apiResponse.message ??
+                'Stored weight history with details fetched successfully',
+            stored: stored,
+            history: history,
+          );
+        }
+
+        return (
+          success: false,
+          message:
+              apiResponse.error ??
+              apiResponse.message ??
+              'Failed to fetch stored weight history',
+          stored: null,
+          history: null,
+        );
+      }
+
+      return (
+        success: false,
+        message: 'Failed to fetch stored weight history',
+        stored: null,
+        history: null,
+      );
+    } on DioException catch (e) {
+      String message = 'Failed to fetch stored weight history';
+      if (e.response != null) {
+        final errorData = e.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          message = errorData['message'];
+        }
+      } else {
+        message = 'Network error: ${e.message}';
+      }
+      return (success: false, message: message, stored: null, history: null);
+    } catch (e) {
+      return (
+        success: false,
+        message: 'Error: ${e.toString()}',
+        stored: null,
+        history: null,
+      );
     }
   }
 

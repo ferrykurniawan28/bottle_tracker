@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:developer' as developer;
+import 'notification_service.dart';
 import '../models/user_model.dart';
 import '../models/api_respon.dart';
 import '../../core/constants/app_constants.dart';
@@ -37,18 +39,54 @@ class AuthService {
 
   Future<void> _updateFCMTokenOnBackend(String userId) async {
     try {
+      developer.log('Fetching FCM token from Firebase...', name: 'AuthService');
       final fcmToken = await FirebaseMessaging.instance.getToken();
-      if (fcmToken != null) {
-        await _dio.post(
+      developer.log(
+        'Firebase returned token: ${fcmToken ?? 'NULL'}',
+        name: 'AuthService',
+      );
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        developer.log(
+          'Sending token to backend for user: $userId',
+          name: 'AuthService',
+        );
+        final response = await _dio.post(
           '/users/$userId/fcm-token',
           data: {'fcm_token': fcmToken},
         );
+        developer.log(
+          '✓ Backend response: ${response.statusCode}',
+          name: 'AuthService',
+        );
         // Cache FCM token locally
         _storage.write('${AppConstants.currentUserKey}_fcm_token', fcmToken);
+      } else {
+        developer.log('⚠ FCM token is empty/null', name: 'AuthService');
       }
     } catch (e) {
       // Log but don't fail - FCM is non-critical
-      print('Warning: Could not update FCM token: $e');
+      developer.log(
+        '✗ Could not update FCM token: $e',
+        name: 'AuthService',
+        error: e,
+      );
+    }
+  }
+
+  Future<void> _subscribeToUserTopic(String userId) async {
+    try {
+      developer.log(
+        'Subscribing user $userId to topic...',
+        name: 'AuthService',
+      );
+      await NotificationService().subscribeToUserTopic(int.parse(userId));
+      developer.log('✓ User topic subscription complete', name: 'AuthService');
+    } catch (e) {
+      developer.log(
+        '✗ Could not subscribe to user topic: $e',
+        name: 'AuthService',
+        error: e,
+      );
     }
   }
 
@@ -83,6 +121,7 @@ class AuthService {
           setCurrentUser(user);
           // Update FCM token on backend after successful registration
           await _updateFCMTokenOnBackend(user.id.toString());
+          await _subscribeToUserTopic(user.id.toString());
           return (
             success: true,
             message: apiResponse.message ?? 'Registration successful',
@@ -142,6 +181,7 @@ class AuthService {
           );
           // Update FCM token on backend after successful login
           await _updateFCMTokenOnBackend(user.id.toString());
+          await _subscribeToUserTopic(user.id.toString());
 
           setCurrentUser(user);
           return (

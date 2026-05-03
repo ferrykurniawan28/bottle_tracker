@@ -1,6 +1,7 @@
 import 'package:bottle_tracker/app/core/constants/app_constants.dart';
 import 'package:bottle_tracker/app/modules/admin/views/admin_devices_list.dart';
 import 'package:bottle_tracker/app/presentation/screens/notifications_screen.dart';
+import 'package:bottle_tracker/app/presentation/screens/stored_detail_screen.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import '../modules/auth/views/login_view.dart';
@@ -14,6 +15,7 @@ import '../data/repositories/notification_repository.dart';
 import '../data/repositories/device_repository.dart';
 import '../presentation/controllers/notification_controller.dart';
 import '../presentation/controllers/device_controller.dart';
+import '../data/models/stored_model.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -86,6 +88,15 @@ class AppPages {
           Get.lazyPut(() => DeviceController(Get.find()));
         }),
       ],
+    ),
+    GetPage(
+      name: AppRoutes.storedDetail,
+      page: () {
+        final stored = Get.arguments;
+        return StoredDetailScreen(
+          stored: stored is StoredModel ? stored : null,
+        );
+      },
     ),
   ];
 }

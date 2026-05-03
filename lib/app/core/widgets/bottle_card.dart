@@ -40,7 +40,7 @@ class BottleCard extends StatelessWidget {
   Color _getStatusColor() {
     // Green if stored, yellow/warning if no weight recorded
     if (bottle.weight != null) return AppColors.success;
-    return AppColors.warning;
+    return AppColors.success;
   }
 
   @override
@@ -67,7 +67,9 @@ class BottleCard extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.15),
+                  color: bottle.isActive
+                      ? statusColor.withValues(alpha: 0.15)
+                      : AppColors.card,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(_getCategoryIcon(), color: statusColor, size: 24),
@@ -179,7 +181,9 @@ class BottleCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      DateFormat('dd MMM').format(bottle.createdAt),
+                      DateFormat(
+                        'dd MMM',
+                      ).format(bottle.createdAt ?? DateTime.now()),
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         color: AppColors.textHint,

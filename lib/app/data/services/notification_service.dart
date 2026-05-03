@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_storage/get_storage.dart';
 import 'dart:developer' as developer;
 
@@ -12,13 +13,63 @@ class NotificationService {
   NotificationService._internal();
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
   final GetStorage _storage = GetStorage();
+  bool _initialized = false;
 
   static const String _fcmTokenKey = 'fcm_token';
+  static const String _channelId = 'bottly_channel';
+  static const String _channelName = 'Bottly Notifications';
 
-  /// Initialize Firebase Messaging and request permissions
   Future<void> initialize() async {
-    // Request notification permissions
+    if (_initialized) return;
+
+    // Initialize local notifications
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    const initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+
+    await _localNotifications.initialize(
+      settings: initSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        developer.log(
+          'Local notification tapped: ${response.payload}',
+          name: 'NotificationService',
+        );
+        _handleNotificationPayload(response.payload);
+      },
+    );
+
+    // Create Android notification channel
+    const androidChannel = AndroidNotificationChannel(
+      _channelId,
+      _channelName,
+      description: 'Bottly app notifications',
+      importance: Importance.high,
+      playSound: true,
+    );
+
+    await _localNotifications.resolvePlatformSpecificImplementation;
+    AndroidFlutterLocalNotificationsPlugin()?.createNotificationChannel(
+      androidChannel,
+    );
+
+    developer.log(
+      '✓ Local notifications initialized',
+      name: 'NotificationService',
+    );
+
+    // Request FCM permissions
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
       alert: true,
       announcement: false,
@@ -33,55 +84,146 @@ class NotificationService {
       name: 'NotificationService',
     );
 
+    // Show notifications while app is in foreground (iOS)
+    await _firebaseMessaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
     // Handle foreground notifications
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       developer.log(
-        'Received foreground notification',
+        '✓ RECEIVED FOREGROUND NOTIFICATION',
         name: 'NotificationService',
-        error: message.notification?.toMap(),
+      );
+      developer.log(
+        'Title: ${message.notification?.title}',
+        name: 'NotificationService',
+      );
+      developer.log(
+        'Body: ${message.notification?.body}',
+        name: 'NotificationService',
+      );
+      developer.log('Data: ${message.data}', name: 'NotificationService');
+
+      // Show local notification popup (required for Android foreground)
+      _showLocalNotification(message);
+      _handleMessage(message);
+    });
+
+    // App was in background and user tapped notification
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      developer.log(
+        '✓ Notification opened from background',
+        name: 'NotificationService',
       );
       _handleMessage(message);
     });
 
-    // Handle notification when app is in background and user taps it
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      developer.log('Notification opened', name: 'NotificationService');
-      _handleMessage(message);
-    });
-
-    // Get initial message if app was launched from notification
+    // App was fully killed and opened via notification
     RemoteMessage? initialMessage = await _firebaseMessaging
         .getInitialMessage();
     if (initialMessage != null) {
+      developer.log(
+        '✓ App launched from terminated state via notification',
+        name: 'NotificationService',
+      );
       _handleMessage(initialMessage);
     }
 
-    // Subscribe to default topics
+    // Listen for token refresh and update backend
+    _firebaseMessaging.onTokenRefresh.listen((newToken) async {
+      developer.log('FCM token refreshed', name: 'NotificationService');
+      await _storage.write(_fcmTokenKey, newToken);
+      // Notify listeners so AuthService can push the new token to backend
+      onTokenRefresh?.call(newToken);
+    });
+
     await _subscribeToTopics();
+
+    _initialized = true;
+    developer.log(
+      '✓ NotificationService fully initialized',
+      name: 'NotificationService',
+    );
   }
 
-  /// Get FCM token
+  /// Optional callback when FCM token refreshes — set this from AuthService
+  Function(String token)? onTokenRefresh;
+
+  /// Show a visible local notification (required for Android foreground)
+  Future<void> _showLocalNotification(RemoteMessage message) async {
+    final notification = message.notification;
+    if (notification == null) return;
+
+    const androidDetails = AndroidNotificationDetails(
+      _channelId,
+      _channelName,
+      channelDescription: 'Bottly app notifications',
+      importance: Importance.high,
+      priority: Priority.high,
+      showWhen: true,
+      icon: '@mipmap/ic_launcher',
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    // Use DateTime milliseconds instead of hashCode to avoid null int error
+    final int notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    await _localNotifications.show(
+      id: notificationId,
+      title: notification.title,
+      body: notification.body,
+      notificationDetails: notificationDetails,
+      payload: message.data.toString(),
+    );
+  }
+
+  /// Get FCM token (from cache first, then Firebase)
   Future<String?> getFCMToken() async {
     try {
-      // Try to get from storage first (cache)
       String? cachedToken = _storage.read(_fcmTokenKey);
       if (cachedToken != null && cachedToken.isNotEmpty) {
+        developer.log('Got cached FCM token', name: 'NotificationService');
         return cachedToken;
       }
 
-      // Get from Firebase
+      developer.log(
+        'Fetching FCM token from Firebase...',
+        name: 'NotificationService',
+      );
       String? token = await _firebaseMessaging.getToken();
 
-      if (token != null) {
-        // Cache the token
+      developer.log(
+        'Firebase returned token: ${token != null ? 'OK' : 'NULL'}',
+        name: 'NotificationService',
+      );
+
+      if (token != null && token.isNotEmpty) {
         await _storage.write(_fcmTokenKey, token);
-        developer.log('FCM Token: $token', name: 'NotificationService');
+        developer.log('✓ FCM token cached', name: 'NotificationService');
+      } else {
+        developer.log(
+          '⚠ Firebase returned empty/null token',
+          name: 'NotificationService',
+        );
       }
 
       return token;
     } catch (e) {
       developer.log(
-        'Error getting FCM token',
+        '✗ Error getting FCM token: $e',
         name: 'NotificationService',
         error: e,
       );
@@ -103,12 +245,12 @@ class NotificationService {
     }
   }
 
-  /// Subscribe to topics
+  /// Subscribe to default topics
   Future<void> _subscribeToTopics() async {
     try {
       await _firebaseMessaging.subscribeToTopic('all_users');
       developer.log(
-        'Subscribed to all_users topic',
+        '✓ Subscribed to all_users topic',
         name: 'NotificationService',
       );
     } catch (e) {
@@ -120,64 +262,19 @@ class NotificationService {
     }
   }
 
-  /// Handle incoming messages
-  void _handleMessage(RemoteMessage message) {
-    developer.log(
-      'Message: ${message.notification?.title} - ${message.notification?.body}',
-      name: 'NotificationService',
-    );
-
-    // Parse the notification data
-    String? actionType = message.data['action_type'];
-    String? notificationId = message.data['notification_id'];
-
-    developer.log(
-      'Action Type: $actionType, Notification ID: $notificationId',
-      name: 'NotificationService',
-    );
-
-    // Handle based on action type
-    _handleNotificationAction(actionType, message.data);
-  }
-
-  /// Handle notification based on action type
-  void _handleNotificationAction(
-    String? actionType,
-    Map<String, dynamic> data,
-  ) {
-    switch (actionType) {
-      case 'pickup_confirmation':
-        developer.log(
-          'Handling pickup confirmation',
-          name: 'NotificationService',
-        );
-        // Will be handled by UI layer
-        break;
-      case 'usage_check':
-        developer.log('Handling usage check', name: 'NotificationService');
-        // Will be handled by UI layer
-        break;
-      case 'admin_alert':
-        developer.log('Handling admin alert', name: 'NotificationService');
-        // Will be handled by UI layer
-        break;
-      default:
-        developer.log(
-          'Unknown action type: $actionType',
-          name: 'NotificationService',
-        );
-    }
-  }
-
   /// Subscribe to user-specific topic
   Future<void> subscribeToUserTopic(int userId) async {
     try {
       String topic = 'user_$userId';
+      developer.log(
+        'Subscribing to topic: $topic',
+        name: 'NotificationService',
+      );
       await _firebaseMessaging.subscribeToTopic(topic);
-      developer.log('Subscribed to $topic', name: 'NotificationService');
+      developer.log('✓ Subscribed to $topic', name: 'NotificationService');
     } catch (e) {
       developer.log(
-        'Error subscribing to user topic',
+        '✗ Error subscribing to user topic: $e',
         name: 'NotificationService',
         error: e,
       );
@@ -196,6 +293,60 @@ class NotificationService {
         name: 'NotificationService',
         error: e,
       );
+    }
+  }
+
+  /// Handle incoming FCM messages
+  void _handleMessage(RemoteMessage message) {
+    developer.log(
+      'Handling message: ${message.notification?.title}',
+      name: 'NotificationService',
+    );
+
+    String? actionType = message.data['action_type'];
+    String? notificationId = message.data['notification_id'];
+
+    developer.log(
+      'Action: $actionType, ID: $notificationId',
+      name: 'NotificationService',
+    );
+
+    _handleNotificationAction(actionType, message.data);
+  }
+
+  /// Handle local notification tap payload
+  void _handleNotificationPayload(String? payload) {
+    if (payload == null) return;
+    developer.log(
+      'Notification payload tapped: $payload',
+      name: 'NotificationService',
+    );
+    // Add navigation logic here if needed
+  }
+
+  /// Handle notification based on action type
+  void _handleNotificationAction(
+    String? actionType,
+    Map<String, dynamic> data,
+  ) {
+    switch (actionType) {
+      case 'pickup_confirmation':
+        developer.log(
+          'Handling pickup confirmation',
+          name: 'NotificationService',
+        );
+        break;
+      case 'usage_check':
+        developer.log('Handling usage check', name: 'NotificationService');
+        break;
+      case 'admin_alert':
+        developer.log('Handling admin alert', name: 'NotificationService');
+        break;
+      default:
+        developer.log(
+          'Unknown action type: $actionType',
+          name: 'NotificationService',
+        );
     }
   }
 }

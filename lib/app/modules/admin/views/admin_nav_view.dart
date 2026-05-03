@@ -14,7 +14,7 @@ class AdminNavView extends GetView<AdminController> {
   Widget build(BuildContext context) {
     final pages = [
       const AdminBottlesView(),
-      const AdminSearchView(),
+      // const AdminSearchView(),
       const NotificationsScreen(),
       const AdminUsersView(),
     ];
@@ -33,10 +33,10 @@ class AdminNavView extends GetView<AdminController> {
               icon: Icons.inventory_2_outlined,
               activeIcon: Icons.inventory_2_rounded,
             ),
-            NavItem(
-              icon: Icons.search_outlined,
-              activeIcon: Icons.manage_search_rounded,
-            ),
+            // NavItem(
+            //   icon: Icons.search_outlined,
+            //   activeIcon: Icons.manage_search_rounded,
+            // ),
             NavItem(
               icon: Icons.notification_important_outlined,
               activeIcon: Icons.notification_important_rounded,

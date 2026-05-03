@@ -147,7 +147,11 @@ class UserStoreView extends GetView<UserController> {
       return ListView.builder(
         padding: const EdgeInsets.all(24),
         itemCount: bottles.length,
-        itemBuilder: (context, index) => BottleCard(bottle: bottles[index]),
+        itemBuilder: (context, index) => BottleCard(
+          bottle: bottles[index],
+          onTap: () =>
+              Get.toNamed(AppRoutes.storedDetail, arguments: bottles[index]),
+        ),
       );
     });
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:bottle_tracker/app/routes/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/bottle_card.dart';
 import '../../../core/widgets/custom_text_field.dart';
@@ -205,7 +206,13 @@ class AdminSearchView extends GetView<AdminController> {
                           ...controller.searchResults.map(
                             (bottle) => Padding(
                               padding: const EdgeInsets.only(bottom: 12),
-                              child: BottleCard(bottle: bottle),
+                              child: BottleCard(
+                                bottle: bottle,
+                                onTap: () => Get.toNamed(
+                                  AppRoutes.storedDetail,
+                                  arguments: bottle,
+                                ),
+                              ),
                             ),
                           ),
                         ],

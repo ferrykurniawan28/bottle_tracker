@@ -24,6 +24,7 @@ dependencies:
   # image_gallery_saver: ^2.0.3
   image_gallery_saver2_fixed: ^2.0.9
   device_info_plus: ^13.1.0
+  flutter_local_notifications: ^21.0.0
 
 dev_dependencies:
   flutter_test:

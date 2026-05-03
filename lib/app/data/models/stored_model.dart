@@ -8,7 +8,8 @@ class StoredModel {
   final String bottleName;
   final String brand;
   final String? category;
-  final DateTime createdAt;
+  final bool isActive;
+  final DateTime? createdAt;
 
   StoredModel({
     required this.id,
@@ -18,8 +19,9 @@ class StoredModel {
     required this.bottleName,
     required this.brand,
     this.category,
-    DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+    this.createdAt,
+    this.isActive = true,
+  });
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -29,7 +31,8 @@ class StoredModel {
     'bottle_name': bottleName,
     'brand': brand,
     'category': category,
-    'created_at': createdAt.toIso8601String(),
+    'created_at': createdAt?.toIso8601String(),
+    'is_active': isActive,
   };
 
   factory StoredModel.fromJson(Map<String, dynamic> json) => StoredModel(
@@ -44,6 +47,7 @@ class StoredModel {
     bottleName: json['bottle_name'].toString(),
     brand: json['brand'].toString(),
     category: json['category']?.toString(),
+    isActive: json['is_active'] ?? true,
     createdAt: json['created_at'] is String
         ? DateTime.parse(json['created_at'])
         : (json['created_at'] as DateTime),
@@ -58,6 +62,7 @@ class StoredModel {
     String? brand,
     String? category,
     DateTime? createdAt,
+    bool? isActive,
   }) => StoredModel(
     id: id ?? this.id,
     deviceId: deviceId ?? this.deviceId,
@@ -67,10 +72,26 @@ class StoredModel {
     brand: brand ?? this.brand,
     category: category ?? this.category,
     createdAt: createdAt ?? this.createdAt,
+    isActive: isActive ?? this.isActive,
   );
 
   String toJsonString() => jsonEncode(toJson());
 
   factory StoredModel.fromJsonString(String str) =>
       StoredModel.fromJson(jsonDecode(str));
+}
+
+enum StoredCategory { whiskey, vodka, tequila, liqueur }
+
+String storedCategoryToString(StoredCategory category) {
+  switch (category) {
+    case StoredCategory.whiskey:
+      return 'whiskey';
+    case StoredCategory.vodka:
+      return 'vodka';
+    case StoredCategory.tequila:
+      return 'tequila';
+    case StoredCategory.liqueur:
+      return 'liqueur';
+  }
 }

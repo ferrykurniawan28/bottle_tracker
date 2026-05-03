@@ -20,29 +20,34 @@ class UserController extends GetxController {
   final storedBottles = <StoredModel>[].obs;
   final selectedCatalogIds = <String>{}.obs;
   final currentIndex = 0.obs;
-  final currentUser = Rx<UserModel?>(null);
+  final currentUser = Rxn<UserModel>();
   final unreadNotificationsCount = 0.obs;
 
   @override
   void onInit() {
     super.onInit();
+    currentUser.value = _authService.getCurrentUser();
     loadData();
   }
 
-  void loadData() async {
+  Future<void> loadData() async {
     final devicesResult = await _deviceService.getAllDevices();
     allDevices.value = devicesResult.devices ?? [];
+
+    final storedUser = currentUser.value;
+    if (storedUser != null) {
+      final storedResult = await _storedService.getStoredByOwner(storedUser.id);
+      storedBottles.value = storedResult.stored ?? [];
+      return;
+    }
 
     final userResult = await _authService.getAllUsers();
     if (userResult.users != null && userResult.users!.isNotEmpty) {
       currentUser.value = userResult.users!.first;
-
-      if (currentUser.value != null) {
-        final storedResult = await _storedService.getStoredByOwner(
-          currentUser.value!.id,
-        );
-        storedBottles.value = storedResult.stored ?? [];
-      }
+      final storedResult = await _storedService.getStoredByOwner(
+        currentUser.value!.id,
+      );
+      storedBottles.value = storedResult.stored ?? [];
     }
   }
 
@@ -68,8 +73,9 @@ class UserController extends GetxController {
       final category = entry.value['category'] as String?;
       final weight = entry.value['weight'] as double?;
 
-      if (deviceId == null || name == null || weight == null || weight <= 0)
+      if (deviceId == null || name == null || weight == null || weight <= 0) {
         continue;
+      }
 
       await _storedService.createStored(
         deviceUid: deviceId.toString(),
@@ -152,7 +158,17 @@ class UserController extends GetxController {
                   device.createdAt.toString().split(' ')[0],
                 ),
                 const SizedBox(height: 24),
-                CustomButton(text: 'Close', onPressed: () => Get.back()),
+                CustomButton(
+                  text: 'Use',
+                  onPressed: () => _handleUsedDevice(device.uid),
+                  color: Color(0xFF4CAF50),
+                ),
+                const SizedBox(height: 24),
+                CustomButton(
+                  text: 'Close',
+                  onPressed: () => Get.back(),
+                  color: AppColors.divider,
+                ),
               ],
             ),
           ),
@@ -168,6 +184,191 @@ class UserController extends GetxController {
     }
   }
 
+  void _handleUsedDevice(String deviceId) {
+    Get.back();
+
+    final nameController = TextEditingController();
+    final brandController = TextEditingController();
+    StoredCategory? selectedCategory;
+
+    Get.dialog(
+      Dialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Store Bottle',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Divider(color: AppColors.divider),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Bottle Name',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: AppColors.divider),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: AppColors.primary),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: brandController,
+                  decoration: InputDecoration(
+                    labelText: 'Brand (optional)',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: AppColors.divider),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: AppColors.primary),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // ✅ StatefulBuilder so dropdown re-renders on selection
+                StatefulBuilder(
+                  builder: (context, setState) {
+                    return DropdownButtonFormField<StoredCategory>(
+                      initialValue:
+                          selectedCategory, // ✅ 'value' not 'initialValue'
+                      isExpanded: true, // ✅ prevents overflow in narrow dialogs
+                      items: StoredCategory.values.map((category) {
+                        return DropdownMenuItem<StoredCategory>(
+                          value: category,
+                          child: Text(
+                            category.toString().split('.').last.toUpperCase(),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() => selectedCategory = value);
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Category (optional)',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: AppColors.divider,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        text: 'Store',
+                        onPressed: () async {
+                          if (nameController.text.trim().isEmpty) {
+                            Get.snackbar(
+                              'Error',
+                              'Please enter a bottle name',
+                              backgroundColor: Colors.red.withValues(
+                                alpha: 0.2,
+                              ),
+                              colorText: Colors.red,
+                            );
+                            return;
+                          }
+
+                          if (brandController.text.trim().isEmpty) {
+                            Get.snackbar(
+                              'Error',
+                              'Please enter a brand name',
+                              backgroundColor: Colors.red.withValues(
+                                alpha: 0.2,
+                              ),
+                              colorText: Colors.red,
+                            );
+                            return;
+                          }
+
+                          if (selectedCategory == null) {
+                            Get.snackbar(
+                              'Error',
+                              'Please select a category',
+                              backgroundColor: Colors.red.withValues(
+                                alpha: 0.2,
+                              ),
+                              colorText: Colors.red,
+                            );
+                            return;
+                          }
+
+                          await _storedService.createStored(
+                            deviceUid: deviceId,
+                            ownerUid: currentUser.value!.uniqueCode,
+                            bottleName: nameController.text.trim(),
+                            brand: brandController.text.trim(),
+                            category: selectedCategory
+                                .toString()
+                                .split('.')
+                                .last
+                                .toUpperCase(),
+                          );
+
+                          Get.back();
+                          loadData();
+
+                          Get.snackbar(
+                            'Success',
+                            'Bottle stored successfully!',
+                            backgroundColor: Colors.green.withValues(
+                              alpha: 0.2,
+                            ),
+                            colorText: Colors.green,
+                          );
+                        },
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: CustomButton(
+                        text: 'Cancel',
+                        onPressed: () => Get.back(),
+                        color: AppColors.divider,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -181,12 +382,18 @@ class UserController extends GetxController {
               fontSize: 13,
             ),
           ),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w500,
-              fontSize: 13,
+          const SizedBox(width: 39),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.poppins(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+              ),
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],

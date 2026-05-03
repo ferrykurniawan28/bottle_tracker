@@ -1,5 +1,6 @@
 import 'package:bottle_tracker/app/data/services/auth_service.dart';
 import 'package:get/get.dart';
+import 'dart:developer' as developer;
 import '../../data/models/notification_model.dart';
 import '../../data/repositories/notification_repository.dart';
 import '../../data/services/notification_service.dart';
@@ -22,6 +23,12 @@ class NotificationController extends GetxController {
   static const int _pageSize = 20;
   bool _hasMore = true;
 
+  int? _currentUserId() {
+    final user = AuthService().getCurrentUser();
+    if (user == null) return null;
+    return int.tryParse(user.id);
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -31,25 +38,62 @@ class NotificationController extends GetxController {
   /// Initialize FCM and setup listeners
   Future<void> _initializeNotifications() async {
     try {
+      developer.log(
+        'NotificationController._initializeNotifications() called',
+        name: 'NotificationController',
+      );
+
       // Initialize FCM
       await _notificationService.initialize();
+      developer.log('✓ FCM initialized', name: 'NotificationController');
 
       // Get and update FCM token
       String? token = await _notificationService.getFCMToken();
-      if (token != null) {
-        final authService = AuthService();
-        final user = authService.getCurrentUser();
-        if (user != null) {
-          await _repository.updateFCMToken(user.id as int, token);
+      developer.log(
+        'Got FCM token: ${token ?? 'NULL'}',
+        name: 'NotificationController',
+      );
+
+      if (token != null && token.isNotEmpty) {
+        final userId = _currentUserId();
+        developer.log(
+          'Current user ID: $userId',
+          name: 'NotificationController',
+        );
+        if (userId != null) {
+          developer.log(
+            'Updating FCM token on backend for user: $userId',
+            name: 'NotificationController',
+          );
+          await _repository.updateFCMToken(userId, token);
+          developer.log(
+            '✓ Token updated on backend',
+            name: 'NotificationController',
+          );
+
           // Subscribe to user-specific topic
-          await _notificationService.subscribeToUserTopic(user.id as int);
+          await _notificationService.subscribeToUserTopic(userId);
+          developer.log(
+            '✓ Subscribed to user topic',
+            name: 'NotificationController',
+          );
         }
+      } else {
+        developer.log(
+          '⚠ Token is empty, skipping backend update',
+          name: 'NotificationController',
+        );
       }
 
       // Load initial notifications
       await getNotifications();
       await getUnreadNotificationsCount();
     } catch (e) {
+      developer.log(
+        '✗ Error initializing notifications: $e',
+        name: 'NotificationController',
+        error: e,
+      );
       error.value = 'Failed to initialize notifications: $e';
     }
   }
@@ -68,12 +112,11 @@ class NotificationController extends GetxController {
       isLoading.value = true;
       error.value = '';
 
-      final authService = AuthService();
-      final user = authService.getCurrentUser();
-      if (user == null) throw Exception('User not authenticated');
+      final userId = _currentUserId();
+      if (userId == null) throw Exception('User not authenticated');
 
       final newNotifications = await _repository.getNotifications(
-        user.id as int,
+        userId,
         limit: _pageSize,
         offset: _currentPage * _pageSize,
       );
@@ -102,12 +145,11 @@ class NotificationController extends GetxController {
       isLoading.value = true;
       error.value = '';
 
-      final authService = AuthService();
-      final user = authService.getCurrentUser();
-      if (user == null) throw Exception('User not authenticated');
+      final userId = _currentUserId();
+      if (userId == null) throw Exception('User not authenticated');
 
       unreadNotifications.value = await _repository.getUnreadNotifications(
-        user.id as int,
+        userId,
       );
     } catch (e) {
       error.value = 'Failed to load unread notifications: $e';
@@ -119,13 +161,10 @@ class NotificationController extends GetxController {
   /// Get unread notification count
   Future<void> getUnreadNotificationsCount() async {
     try {
-      final authService = AuthService();
-      final user = authService.getCurrentUser();
-      if (user == null) throw Exception('User not authenticated');
+      final userId = _currentUserId();
+      if (userId == null) throw Exception('User not authenticated');
 
-      unreadCount.value = await _repository.getUnreadNotificationCount(
-        user.id as int,
-      );
+      unreadCount.value = await _repository.getUnreadNotificationCount(userId);
     } catch (e) {
       error.value = 'Failed to get unread count: $e';
     }
@@ -151,11 +190,10 @@ class NotificationController extends GetxController {
   /// Mark all notifications as read
   Future<void> markAllAsRead() async {
     try {
-      final authService = AuthService();
-      final user = authService.getCurrentUser();
-      if (user == null) throw Exception('User not authenticated');
+      final userId = _currentUserId();
+      if (userId == null) throw Exception('User not authenticated');
 
-      await _repository.markAllNotificationsAsRead(user.id as int);
+      await _repository.markAllNotificationsAsRead(userId);
 
       // Update local state
       for (var i = 0; i < notifications.length; i++) {
@@ -243,11 +281,10 @@ class NotificationController extends GetxController {
   /// Cleanup on logout
   Future<void> logout() async {
     try {
-      final authService = AuthService();
-      final user = authService.getCurrentUser();
-      if (user != null) {
-        await _repository.deleteFCMToken(user.id as int);
-        await _notificationService.unsubscribeFromUserTopic(user.id as int);
+      final userId = _currentUserId();
+      if (userId != null) {
+        await _repository.deleteFCMToken(userId);
+        await _notificationService.unsubscribeFromUserTopic(userId);
         await _notificationService.clearFCMToken();
       }
       notifications.clear();

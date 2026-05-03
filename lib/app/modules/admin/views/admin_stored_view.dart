@@ -15,7 +15,7 @@ class AdminBottlesView extends GetView<AdminController> {
     return Scaffold(
       body: SafeArea(
         child: Obx(() {
-          final devices = controller.allDevices;
+          // final devices = controller.allDevices;
           final stored = controller.allStoredBottles;
 
           return CustomScrollView(
@@ -138,7 +138,13 @@ class AdminBottlesView extends GetView<AdminController> {
                       final bottle = stored[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: BottleCard(bottle: bottle),
+                        child: BottleCard(
+                          bottle: bottle,
+                          onTap: () => Get.toNamed(
+                            AppRoutes.storedDetail,
+                            arguments: bottle,
+                          ),
+                        ),
                       );
                     }, childCount: stored.length),
                   ),
@@ -159,6 +165,7 @@ class StatCard extends StatelessWidget {
   final Color color;
 
   const StatCard({
+    super.key,
     required this.label,
     required this.value,
     required this.icon,

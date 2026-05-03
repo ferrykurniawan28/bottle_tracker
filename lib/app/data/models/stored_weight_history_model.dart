@@ -2,11 +2,11 @@ import 'dart:convert';
 
 class StoredWeightHistoryModel {
   final int? id;
-  final int storedId; // Foreign key to stored
+  final int storedId;
   final double weight;
   final DateTime? recordedAt;
   final String? note;
-  bool isSynced; // Track if locally stored entry is synced
+  bool isSynced;
 
   StoredWeightHistoryModel({
     this.id,
@@ -37,15 +37,57 @@ class StoredWeightHistoryModel {
 
   factory StoredWeightHistoryModel.fromJson(Map<String, dynamic> json) =>
       StoredWeightHistoryModel(
-        id: json['id'],
-        storedId: json['stored_id'],
-        weight: (json['weight'] as num).toDouble(),
-        recordedAt: json['recorded_at'] != null
-            ? DateTime.parse(json['recorded_at'])
-            : null,
-        note: json['note'],
+        id: json['id'] is int
+            ? json['id'] as int
+            : (json['id'] != null ? int.tryParse(json['id'].toString()) : null),
+        storedId: json['stored_id'] is int
+            ? json['stored_id'] as int
+            : (json['stored_id'] != null
+                  ? int.parse(json['stored_id'].toString())
+                  : 0),
+        weight: _parseDouble(json['weight']),
+        recordedAt: _parseDateTime(json['recorded_at'] ?? json['created_at']),
+        note: json['note']?.toString(),
         isSynced: json['is_synced'] ?? false,
       );
+
+  static double _parseDouble(dynamic v) {
+    if (v == null) return 0.0;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v) ?? 0.0;
+    if (v is Map) {
+      // try to find a numeric value inside the map
+      for (final val in v.values) {
+        if (val is num) return val.toDouble();
+        if (val is String) {
+          final parsed = double.tryParse(val);
+          if (parsed != null) return parsed;
+        }
+      }
+    }
+    return 0.0;
+  }
+
+  static DateTime? _parseDateTime(dynamic v) {
+    if (v == null) return null;
+    if (v is String) {
+      try {
+        return DateTime.parse(v);
+      } catch (_) {
+        return null;
+      }
+    }
+    if (v is DateTime) return v;
+    if (v is Map) {
+      // sometimes time can be nested; try common keys
+      if (v.containsKey('Time') && v['Time'] is String) {
+        try {
+          return DateTime.parse(v['Time']);
+        } catch (_) {}
+      }
+    }
+    return null;
+  }
 
   String toJsonString() => jsonEncode(toJson());
   factory StoredWeightHistoryModel.fromJsonString(String str) =>

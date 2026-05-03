@@ -5,4 +5,5 @@ abstract class AppRoutes {
   static const adminNav = '/admin';
   static const notification = '/notification';
   static const adminDevices = '/admin/devices';
+  static const storedDetail = '/stored/detail';
 }
