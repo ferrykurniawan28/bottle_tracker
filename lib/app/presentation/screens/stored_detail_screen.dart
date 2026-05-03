@@ -67,7 +67,7 @@ class _StoredDetailScreenState extends State<StoredDetailScreen> {
         title: const Text('Stored Detail'),
         actions: [
           // if user want to finish the stored, they can tap this button to mark it as finished
-          if (stored != null && stored.isActive)
+          if (stored != null && stored.status == 'active')
             IconButton(
               icon: const Icon(Icons.check_circle_outline_rounded),
               onPressed: () {
@@ -85,7 +85,7 @@ class _StoredDetailScreenState extends State<StoredDetailScreen> {
                     if (result.success) {
                       Get.back();
                       setState(() {
-                        _stored = _stored!.copyWith(isActive: false);
+                        _stored = _stored!.copyWith(status: 'finished');
                       });
                     } else {
                       Get.snackbar('Error', result.message);
@@ -263,8 +263,8 @@ class _DetailHeaderCard extends StatelessWidget {
                     //   color: statusColor,
                     // ),
                     _Badge(
-                      label: stored.isActive ? 'Active' : 'Inactive',
-                      color: stored.isActive
+                      label: stored.status == 'active' ? 'Active' : 'Finished',
+                      color: stored.status == 'active'
                           ? AppColors.primary
                           : AppColors.textHint,
                     ),
@@ -364,7 +364,7 @@ class _HistoryTile extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      '${entry.weight.toStringAsFixed(0)} ml',
+                      '≈ ${entry.weight.toStringAsFixed(0)} ml',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,

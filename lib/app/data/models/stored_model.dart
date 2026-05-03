@@ -8,7 +8,7 @@ class StoredModel {
   final String bottleName;
   final String brand;
   final String? category;
-  final bool isActive;
+  final String status;
   final DateTime? createdAt;
 
   StoredModel({
@@ -20,7 +20,7 @@ class StoredModel {
     required this.brand,
     this.category,
     this.createdAt,
-    this.isActive = true,
+    this.status = 'active',
   });
 
   Map<String, dynamic> toJson() => {
@@ -32,7 +32,7 @@ class StoredModel {
     'brand': brand,
     'category': category,
     'created_at': createdAt?.toIso8601String(),
-    'is_active': isActive,
+    'status': status,
   };
 
   factory StoredModel.fromJson(Map<String, dynamic> json) => StoredModel(
@@ -47,7 +47,7 @@ class StoredModel {
     bottleName: json['bottle_name'].toString(),
     brand: json['brand'].toString(),
     category: json['category']?.toString(),
-    isActive: json['is_active'] ?? true,
+    status: json['status']?.toString() ?? 'active',
     createdAt: json['created_at'] is String
         ? DateTime.parse(json['created_at'])
         : (json['created_at'] as DateTime),
@@ -62,7 +62,7 @@ class StoredModel {
     String? brand,
     String? category,
     DateTime? createdAt,
-    bool? isActive,
+    String? status,
   }) => StoredModel(
     id: id ?? this.id,
     deviceId: deviceId ?? this.deviceId,
@@ -72,7 +72,7 @@ class StoredModel {
     brand: brand ?? this.brand,
     category: category ?? this.category,
     createdAt: createdAt ?? this.createdAt,
-    isActive: isActive ?? this.isActive,
+    status: status ?? this.status,
   );
 
   String toJsonString() => jsonEncode(toJson());

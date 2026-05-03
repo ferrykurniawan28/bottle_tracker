@@ -38,7 +38,7 @@ class BottleCard extends StatelessWidget {
   }
 
   Color _getStatusColor() {
-    if (!bottle.isActive) return AppColors.error;
+    if (bottle.status != 'active') return AppColors.error;
     // if(bottle.category != null) return AppColors.primary;
     return AppColors.success;
   }
@@ -67,7 +67,7 @@ class BottleCard extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: bottle.isActive
+                  color: bottle.status == 'active'
                       ? statusColor.withValues(alpha: 0.15)
                       : AppColors.card,
                   borderRadius: BorderRadius.circular(16),

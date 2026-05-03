@@ -233,7 +233,7 @@ class UserController extends GetxController {
                 TextField(
                   controller: brandController,
                   decoration: InputDecoration(
-                    labelText: 'Brand (optional)',
+                    labelText: 'Brand',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: const BorderSide(color: AppColors.divider),
@@ -264,7 +264,7 @@ class UserController extends GetxController {
                         setState(() => selectedCategory = value);
                       },
                       decoration: InputDecoration(
-                        labelText: 'Category (optional)',
+                        labelText: 'Category',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: const BorderSide(
