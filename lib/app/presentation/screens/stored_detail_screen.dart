@@ -125,7 +125,7 @@ class _StoredDetailScreenState extends State<StoredDetailScreen> {
                       Row(
                         children: [
                           Text(
-                            'Weight History',
+                            'Volume History',
                             style: GoogleFonts.poppins(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,

@@ -1,6 +1,11 @@
+import 'package:bottle_tracker/app/core/theme/app_colors.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:get/get.dart';
+import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import '../../core/constants/app_constants.dart';
 import 'dart:developer' as developer;
 
 class NotificationService {
@@ -16,6 +21,7 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
   final GetStorage _storage = GetStorage();
+  late final Dio _dio;
   bool _initialized = false;
 
   static const String _fcmTokenKey = 'fcm_token';
@@ -24,6 +30,17 @@ class NotificationService {
 
   Future<void> initialize() async {
     if (_initialized) return;
+
+    // Initialize Dio HTTP client
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: URLs.apiBaseUrl,
+        contentType: Headers.jsonContentType,
+        responseType: ResponseType.json,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+      ),
+    );
 
     // Initialize local notifications
     const androidSettings = AndroidInitializationSettings(
@@ -59,7 +76,7 @@ class NotificationService {
       playSound: true,
     );
 
-    await _localNotifications.resolvePlatformSpecificImplementation;
+    _localNotifications.resolvePlatformSpecificImplementation;
     AndroidFlutterLocalNotificationsPlugin()?.createNotificationChannel(
       androidChannel,
     );
@@ -335,9 +352,11 @@ class NotificationService {
           'Handling pickup confirmation',
           name: 'NotificationService',
         );
+        _showPickupConfirmationDialog(data);
         break;
       case 'usage_check':
         developer.log('Handling usage check', name: 'NotificationService');
+        _showUsageCheckDialog(data);
         break;
       case 'admin_alert':
         developer.log('Handling admin alert', name: 'NotificationService');
@@ -347,6 +366,257 @@ class NotificationService {
           'Unknown action type: $actionType',
           name: 'NotificationService',
         );
+    }
+  }
+
+  /// Confirm pickup (user tapped "Yes" or "No" on notification)
+  /// Set [confirmed] to true if user picked it up, false if unauthorized
+  Future<({dynamic message, dynamic success})> confirmPickup({
+    required int notificationId,
+    required bool confirmed,
+  }) async {
+    try {
+      developer.log(
+        'Confirming pickup for notification $notificationId: $confirmed',
+        name: 'NotificationService',
+      );
+
+      final response = await _dio.post(
+        '/notifications/$notificationId/confirm-pickup',
+        data: {'confirmed': confirmed},
+      );
+
+      if (response.statusCode == 200) {
+        final success = response.data['success'] ?? true;
+        final message = response.data['message'] ?? 'Confirmed';
+
+        developer.log(
+          'Pickup confirmation sent: $message',
+          name: 'NotificationService',
+        );
+
+        return (success: success, message: message);
+      }
+
+      return (success: false, message: 'Failed to confirm pickup');
+    } catch (e) {
+      developer.log(
+        'Error confirming pickup: $e',
+        name: 'NotificationService',
+        error: e,
+      );
+      return (success: false, message: 'Error: $e');
+    }
+  }
+
+  /// Confirm usage (user responded to 30-min usage check)
+  /// Set [stillUsing] to true if still using bottle, false if done
+  Future<({dynamic message, dynamic success})> confirmUsage({
+    required int notificationId,
+    required bool stillUsing,
+  }) async {
+    try {
+      developer.log(
+        'Confirming usage for notification $notificationId: still_using=$stillUsing',
+        name: 'NotificationService',
+      );
+
+      final response = await _dio.post(
+        '/notifications/$notificationId/confirm-usage',
+        data: {'still_using': stillUsing},
+      );
+
+      if (response.statusCode == 200) {
+        final success = response.data['success'] ?? true;
+        final message = response.data['message'] ?? 'Confirmed';
+
+        developer.log(
+          'Usage confirmation sent: $message',
+          name: 'NotificationService',
+        );
+
+        return (success: success, message: message);
+      }
+
+      return (success: false, message: 'Failed to confirm usage');
+    } catch (e) {
+      developer.log(
+        'Error confirming usage: $e',
+        name: 'NotificationService',
+        error: e,
+      );
+      return (success: false, message: 'Error: $e');
+    }
+  }
+
+  /// Show pickup confirmation dialog (called when notification is tapped)
+  void _showPickupConfirmationDialog(Map<String, dynamic> data) {
+    try {
+      final notificationId = int.tryParse(data['notification_id'] ?? '');
+      final bottleName = data.containsKey('data')
+          ? _extractFromJsonData(data['data'], 'bottle_name')
+          : 'your bottle';
+
+      if (notificationId == null) {
+        developer.log(
+          'Could not extract notification ID from data',
+          name: 'NotificationService',
+        );
+        return;
+      }
+
+      Get.dialog(
+        AlertDialog(
+          title: const Text('Pickup Confirmation'),
+          content: Text('Did you pick up $bottleName?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Get.back();
+                _confirmPickupAndClose(notificationId, false);
+              },
+              child: const Text('No', style: TextStyle(color: Colors.red)),
+            ),
+            TextButton(
+              onPressed: () {
+                Get.back();
+                _confirmPickupAndClose(notificationId, true);
+              },
+              child: const Text('Yes', style: TextStyle(color: Colors.green)),
+            ),
+          ],
+        ),
+        barrierDismissible: false,
+      );
+    } catch (e) {
+      developer.log(
+        'Error showing pickup confirmation dialog: $e',
+        name: 'NotificationService',
+        error: e,
+      );
+    }
+  }
+
+  /// Show usage check dialog (called when notification is tapped)
+  void _showUsageCheckDialog(Map<String, dynamic> data) {
+    try {
+      final notificationId = int.tryParse(data['notification_id'] ?? '');
+      final bottleName = data.containsKey('data')
+          ? _extractFromJsonData(data['data'], 'bottle_name')
+          : 'your bottle';
+
+      if (notificationId == null) {
+        developer.log(
+          'Could not extract notification ID from data',
+          name: 'NotificationService',
+        );
+        return;
+      }
+
+      Get.dialog(
+        AlertDialog(
+          title: const Text('Still Using?'),
+          content: Text('Are you still using $bottleName?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Get.back();
+                _confirmUsageAndClose(notificationId, false);
+              },
+              child: const Text('Done', style: TextStyle(color: Colors.red)),
+            ),
+            TextButton(
+              onPressed: () {
+                Get.back();
+                _confirmUsageAndClose(notificationId, true);
+              },
+              child: Text(
+                'Still Using',
+                style: TextStyle(color: AppColors.primary),
+              ),
+            ),
+          ],
+        ),
+        barrierDismissible: false,
+      );
+    } catch (e) {
+      developer.log(
+        'Error showing usage check dialog: $e',
+        name: 'NotificationService',
+        error: e,
+      );
+    }
+  }
+
+  /// Extract value from JSON string data
+  String _extractFromJsonData(String jsonStr, String key) {
+    try {
+      final Map<String, dynamic> map = Map<String, dynamic>.from(
+        (jsonStr as dynamic),
+      );
+      return map[key]?.toString() ?? '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  /// Confirm pickup and close dialog
+  Future<void> _confirmPickupAndClose(
+    int notificationId,
+    bool confirmed,
+  ) async {
+    try {
+      developer.log(
+        'User responded to pickup confirmation: $confirmed',
+        name: 'NotificationService',
+      );
+      final result = await confirmPickup(
+        notificationId: notificationId,
+        confirmed: confirmed,
+      );
+
+      Get.snackbar(
+        'Success',
+        result.message as String,
+        duration: const Duration(seconds: 2),
+      );
+    } catch (e) {
+      developer.log(
+        'Error in pickup confirmation: $e',
+        name: 'NotificationService',
+        error: e,
+      );
+      Get.snackbar('Error', 'Failed to confirm pickup');
+    }
+  }
+
+  /// Confirm usage and close dialog
+  Future<void> _confirmUsageAndClose(
+    int notificationId,
+    bool stillUsing,
+  ) async {
+    try {
+      developer.log(
+        'User responded to usage check: $stillUsing',
+        name: 'NotificationService',
+      );
+      final result = await confirmUsage(
+        notificationId: notificationId,
+        stillUsing: stillUsing,
+      );
+
+      Get.snackbar(
+        'Success',
+        result.message as String,
+        duration: const Duration(seconds: 2),
+      );
+    } catch (e) {
+      developer.log(
+        'Error in usage confirmation: $e',
+        name: 'NotificationService',
+        error: e,
+      );
+      Get.snackbar('Error', 'Failed to confirm usage');
     }
   }
 }

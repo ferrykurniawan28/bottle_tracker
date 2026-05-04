@@ -159,8 +159,6 @@ class StoredService {
         '/stored/$storedId/weight-history/details',
       );
 
-      print('Response data: ${response.data}'); // Debug log
-
       if (response.statusCode == 200) {
         final apiResponse = ApiRespon(
           success: response.data['success'] ?? true,
