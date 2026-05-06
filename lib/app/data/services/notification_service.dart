@@ -619,4 +619,46 @@ class NotificationService {
       Get.snackbar('Error', 'Failed to confirm usage');
     }
   }
+
+  // fetch unread notifications count for user
+  Future<({dynamic message, dynamic success, int? notifications})>
+  getUnreadNotifications(int userId) async {
+    try {
+      final response = await _dio.get(
+        '/users/$userId/notifications/unread/count',
+      );
+
+      if (response.statusCode == 200) {
+        final notifications = response.data['data']['unread_count'] as int?;
+
+        developer.log(
+          'Fetched unread notifications: $notifications',
+          name: 'NotificationService',
+        );
+
+        return (
+          success: true,
+          message: 'Fetched unread notifications',
+          notifications: notifications,
+        );
+      }
+
+      return (
+        success: false,
+        message: 'Failed to fetch unread notifications',
+        notifications: null,
+      );
+    } catch (e) {
+      developer.log(
+        'Error fetching unread notifications: $e',
+        name: 'NotificationService',
+        error: e,
+      );
+      return (
+        success: false,
+        message: 'Error fetching unread notifications',
+        notifications: null,
+      );
+    }
+  }
 }

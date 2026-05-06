@@ -34,8 +34,11 @@ class UserProfileView extends StatelessWidget {
                       color: AppColors.secondary,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.person_rounded,
-                        color: Colors.white, size: 22),
+                    child: const Icon(
+                      Icons.person_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -56,13 +59,10 @@ class UserProfileView extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(32),
-                  
                 ),
                 child: Center(
                   child: Text(
-                    user.name.isNotEmpty
-                        ? user.name[0].toUpperCase()
-                        : '?',
+                    user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
                     style: GoogleFonts.poppins(
                       fontSize: 40,
                       fontWeight: FontWeight.w700,
@@ -101,8 +101,11 @@ class UserProfileView extends StatelessWidget {
                             color: AppColors.accent.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.qr_code_rounded,
-                              color: AppColors.accent, size: 22),
+                          child: const Icon(
+                            Icons.qr_code_rounded,
+                            color: AppColors.accent,
+                            size: 22,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Text(
@@ -119,7 +122,9 @@ class UserProfileView extends StatelessWidget {
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                          vertical: 20, horizontal: 24),
+                        vertical: 20,
+                        horizontal: 24,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.background,
                         borderRadius: BorderRadius.circular(16),
@@ -128,49 +133,58 @@ class UserProfileView extends StatelessWidget {
                           width: 1.5,
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ...user.uniqueCode.split('').map(
-                                (char) => Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(horizontal: 4),
-                                  width: 42,
-                                  height: 52,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color:
-                                          AppColors.primary.withValues(alpha: 0.3),
-                                      width: 1,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ...user.uniqueCode
+                                .split('')
+                                .map(
+                                  (char) => Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 4,
                                     ),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      char,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.accent,
+                                    width: 42,
+                                    height: 52,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.15,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: AppColors.primary.withValues(
+                                          alpha: 0.3,
+                                        ),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        char,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.accent,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
                     GestureDetector(
                       onTap: () {
-                        Clipboard.setData(
-                            ClipboardData(text: user.uniqueCode));
+                        Clipboard.setData(ClipboardData(text: user.uniqueCode));
                         Get.snackbar(
                           'Copied!',
                           'Your unique code has been copied',
-                          backgroundColor:
-                              AppColors.success.withValues(alpha: 0.2),
+                          backgroundColor: AppColors.success.withValues(
+                            alpha: 0.2,
+                          ),
                           colorText: AppColors.success,
                           snackPosition: SnackPosition.TOP,
                           borderRadius: 16,
@@ -180,8 +194,11 @@ class UserProfileView extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.copy_rounded,
-                              color: AppColors.textHint, size: 16),
+                          const Icon(
+                            Icons.copy_rounded,
+                            color: AppColors.textHint,
+                            size: 16,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             'Tap to copy code',

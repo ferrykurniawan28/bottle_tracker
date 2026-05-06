@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../core/utils/datetime_utils.dart';
 
 class StoredWeightHistoryModel {
   final int? id;
@@ -72,17 +73,17 @@ class StoredWeightHistoryModel {
     if (v == null) return null;
     if (v is String) {
       try {
-        return DateTime.parse(v);
+        return DateTime.parse(v).toUtcPlus7();
       } catch (_) {
         return null;
       }
     }
-    if (v is DateTime) return v;
+    if (v is DateTime) return v.toUtcPlus7();
     if (v is Map) {
       // sometimes time can be nested; try common keys
       if (v.containsKey('Time') && v['Time'] is String) {
         try {
-          return DateTime.parse(v['Time']);
+          return DateTime.parse(v['Time']).toUtcPlus7();
         } catch (_) {}
       }
     }

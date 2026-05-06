@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../core/utils/datetime_utils.dart';
 import '../../domain/entities/device_entity.dart';
 
 class DeviceModel extends DeviceEntity {
@@ -21,8 +22,8 @@ class DeviceModel extends DeviceEntity {
     uid: json['uid'].toString(),
     isUsed: json['is_used'] as bool? ?? false,
     createdAt: json['created_at'] is String
-        ? DateTime.parse(json['created_at'])
-        : (json['created_at'] as DateTime),
+        ? DateTime.parse(json['created_at']).toUtcPlus7()
+        : (json['created_at'] as DateTime).toUtcPlus7(),
   );
 
   DeviceModel copyWith({

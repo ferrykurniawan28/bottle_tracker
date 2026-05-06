@@ -1,35 +1,22 @@
+import '../../core/utils/datetime_utils.dart';
 import '../../domain/entities/notification_entity.dart';
 
 class NotificationModel extends NotificationEntity {
   NotificationModel({
-    required int id,
-    required int userId,
-    required String title,
-    required String body,
-    required String actionType,
-    required String actionStatus,
-    int? relatedStoredId,
-    DateTime? expiresAt,
-    Map<String, dynamic>? data,
-    required bool isRead,
-    required DateTime createdAt,
-    DateTime? readAt,
-    DateTime? confirmedAt,
-  }) : super(
-         id: id,
-         userId: userId,
-         title: title,
-         body: body,
-         actionType: actionType,
-         actionStatus: actionStatus,
-         relatedStoredId: relatedStoredId,
-         expiresAt: expiresAt,
-         data: data,
-         isRead: isRead,
-         createdAt: createdAt,
-         readAt: readAt,
-         confirmedAt: confirmedAt,
-       );
+    required super.id,
+    required super.userId,
+    required super.title,
+    required super.body,
+    required super.actionType,
+    required super.actionStatus,
+    super.relatedStoredId,
+    super.expiresAt,
+    super.data,
+    required super.isRead,
+    required super.createdAt,
+    super.readAt,
+    super.confirmedAt,
+  });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
@@ -41,16 +28,18 @@ class NotificationModel extends NotificationEntity {
       actionStatus: json['action_status'] ?? 'pending',
       relatedStoredId: json['related_stored_id'],
       expiresAt: json['expires_at'] != null
-          ? DateTime.parse(json['expires_at'])
+          ? DateTime.parse(json['expires_at']).toUtcPlus7()
           : null,
       data: json['data'] as Map<String, dynamic>?,
       isRead: json['is_read'] ?? false,
       createdAt: DateTime.parse(
         json['created_at'] ?? DateTime.now().toIso8601String(),
-      ),
-      readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
+      ).toUtcPlus7(),
+      readAt: json['read_at'] != null
+          ? DateTime.parse(json['read_at']).toUtcPlus7()
+          : null,
       confirmedAt: json['confirmed_at'] != null
-          ? DateTime.parse(json['confirmed_at'])
+          ? DateTime.parse(json['confirmed_at']).toUtcPlus7()
           : null,
     );
   }

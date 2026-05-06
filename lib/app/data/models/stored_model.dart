@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../core/utils/datetime_utils.dart';
 
 class StoredModel {
   final int id;
@@ -49,8 +50,8 @@ class StoredModel {
     category: json['category']?.toString(),
     status: json['status']?.toString() ?? 'active',
     createdAt: json['created_at'] is String
-        ? DateTime.parse(json['created_at'])
-        : (json['created_at'] as DateTime),
+        ? DateTime.parse(json['created_at']).toUtcPlus7()
+        : (json['created_at'] as DateTime?)?.toUtcPlus7(),
   );
 
   StoredModel copyWith({

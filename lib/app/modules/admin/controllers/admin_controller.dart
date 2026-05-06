@@ -56,6 +56,7 @@ class AdminController extends GetxController {
     allStoredBottles.value = storedResult.stored ?? [];
 
     final usersResult = await _authService.getAllUsers();
+    print('Fetched users: ${usersResult.users?.length ?? 0}');
     allUsers.value = usersResult.users ?? [];
     filteredUsers.value = usersResult.users ?? [];
     currentPage.value = 0;

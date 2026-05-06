@@ -66,7 +66,9 @@ class NotificationTile extends StatelessWidget {
               notificationController.deleteNotification(notification.id),
         ),
         isThreeLine: true,
-        onTap: notification.actionType == 'pickup_confirmation'
+        onTap:
+            (notification.actionType == 'pickup_confirmation') &&
+                (notification.actionStatus == 'pending')
             ? () =>
                   _showPickupConfirmationDialog(context, notificationController)
             : notification.actionType == 'usage_check'

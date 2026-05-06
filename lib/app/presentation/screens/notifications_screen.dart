@@ -14,32 +14,6 @@ class NotificationsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Notifications'),
         actions: [
-          Obx(
-            () => notificationController.unreadCount.value > 0
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          notificationController.unreadCount.value.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
           if (Get.isSnackbarOpen == false)
             PopupMenuButton(
               itemBuilder: (context) => [
@@ -72,25 +46,12 @@ class NotificationsScreen extends StatelessWidget {
           child: ListView.builder(
             itemCount: notificationController.notifications.length + 1,
             itemBuilder: (context, index) {
-              if (index == notificationController.notifications.length) {
-                if (!notificationController.isLoading.value) {
-                  return Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: ElevatedButton(
-                      onPressed: notificationController.loadMoreNotifications,
-                      child: const Text('Load More'),
-                    ),
-                  );
-                }
-                return const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: CircularProgressIndicator(),
-                );
+              // return tile for each notification
+              if (index < notificationController.notifications.length) {
+                final notification =
+                    notificationController.notifications[index];
+                return NotificationTile(notification: notification);
               }
-
-              return NotificationTile(
-                notification: notificationController.notifications[index],
-              );
             },
           ),
         );

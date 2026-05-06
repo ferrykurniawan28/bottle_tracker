@@ -221,6 +221,8 @@ class AuthService {
     try {
       final response = await _dio.get(URLs.usersEndpoint);
 
+      print('Response data: ${response.data}');
+
       if (response.statusCode == 200) {
         final apiResponse = ApiRespon(
           success: response.data['success'] ?? true,
@@ -236,6 +238,8 @@ class AuthService {
                     UserModel.fromJson(user as Map<String, dynamic>, null),
               )
               .toList();
+
+          print('Parsed users: ${usersList.length}');
           return (
             success: true,
             message: apiResponse.message ?? 'Users fetched successfully',

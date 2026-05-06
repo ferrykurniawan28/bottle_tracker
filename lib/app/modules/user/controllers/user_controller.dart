@@ -1,5 +1,6 @@
 import 'package:bottle_tracker/app/core/theme/app_colors.dart';
 import 'package:bottle_tracker/app/core/widgets/custom_button.dart';
+import 'package:bottle_tracker/app/data/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -15,6 +16,7 @@ class UserController extends GetxController {
   final DeviceService _deviceService = DeviceService();
   final StoredService _storedService = StoredService();
   final AuthService _authService = AuthService();
+  final NotificationService _notificationService = NotificationService();
 
   final allDevices = <DeviceModel>[].obs;
   final storedBottles = <StoredModel>[].obs;
@@ -31,6 +33,7 @@ class UserController extends GetxController {
   }
 
   Future<void> loadData() async {
+    int userId = int.tryParse(currentUser.value?.id ?? '0') ?? 0;
     final devicesResult = await _deviceService.getAllDevices();
     allDevices.value = devicesResult.devices ?? [];
 
@@ -38,17 +41,21 @@ class UserController extends GetxController {
     if (storedUser != null) {
       final storedResult = await _storedService.getStoredByOwner(storedUser.id);
       storedBottles.value = storedResult.stored ?? [];
-      return;
+    } else {
+      final userResult = await _authService.getAllUsers();
+      if (userResult.users != null && userResult.users!.isNotEmpty) {
+        currentUser.value = userResult.users!.first;
+        userId = int.tryParse(currentUser.value!.id) ?? 0;
+        final storedResult = await _storedService.getStoredByOwner(
+          currentUser.value!.id,
+        );
+        storedBottles.value = storedResult.stored ?? [];
+      }
     }
 
-    final userResult = await _authService.getAllUsers();
-    if (userResult.users != null && userResult.users!.isNotEmpty) {
-      currentUser.value = userResult.users!.first;
-      final storedResult = await _storedService.getStoredByOwner(
-        currentUser.value!.id,
-      );
-      storedBottles.value = storedResult.stored ?? [];
-    }
+    final notificationsResult = await _notificationService
+        .getUnreadNotifications(userId);
+    unreadNotificationsCount.value = notificationsResult.notifications ?? 0;
   }
 
   void toggleSelection(String catalogId) {
