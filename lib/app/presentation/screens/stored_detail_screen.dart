@@ -194,7 +194,7 @@ class _DetailHeaderCard extends StatelessWidget {
         return Icons.local_bar_rounded;
       case 'vodka':
         return Icons.liquor_rounded;
-      case 'wine':
+      case 'rum':
         return Icons.wine_bar_rounded;
       case 'tequila':
         return Icons.nightlife_rounded;

@@ -82,7 +82,7 @@ class StoredModel {
       StoredModel.fromJson(jsonDecode(str));
 }
 
-enum StoredCategory { whiskey, vodka, tequila, liqueur }
+enum StoredCategory { whiskey, vodka, tequila, rum }
 
 String storedCategoryToString(StoredCategory category) {
   switch (category) {
@@ -92,7 +92,7 @@ String storedCategoryToString(StoredCategory category) {
       return 'vodka';
     case StoredCategory.tequila:
       return 'tequila';
-    case StoredCategory.liqueur:
-      return 'liqueur';
+    case StoredCategory.rum:
+      return 'rum';
   }
 }
