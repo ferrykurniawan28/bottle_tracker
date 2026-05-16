@@ -2,6 +2,7 @@ import 'package:bottle_tracker/app/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/bottle_card.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -124,7 +125,14 @@ class UserStoreView extends GetView<UserController> {
                   ],
                 ),
               ),
-              Expanded(child: _buildBottleList()),
+              Expanded(
+                child: Obx(() {
+                  if (controller.isLoading.value) {
+                    return _buildShimmerLoading();
+                  }
+                  return _buildBottleList();
+                }),
+              ),
             ],
           ),
         ),
@@ -133,6 +141,27 @@ class UserStoreView extends GetView<UserController> {
         onPressed: () => controller.scanBottleQR(),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.qr_code_scanner, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildShimmerLoading() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(24),
+      itemCount: 10,
+      itemBuilder: (context, index) => Shimmer.fromColors(
+        baseColor: AppColors.surface,
+        highlightColor: AppColors.surface.withValues(alpha: 0.8),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Container(
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -25,7 +25,7 @@ android {
     defaultConfig {
         applicationId = "com.example.bottle_tracker"
         minSdk = flutter.minSdkVersion
-        targetSdk = 36
+        targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true

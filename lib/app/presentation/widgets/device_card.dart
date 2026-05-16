@@ -4,7 +4,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_gallery_saver2_fixed/image_gallery_saver2_fixed.dart';
+// import 'package:image_gallery_saver2_fixed/image_gallery_saver2_fixed.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/models/device_model.dart';
 import 'package:intl/intl.dart';
@@ -113,33 +113,33 @@ class DeviceCard extends StatelessWidget {
         final image = await qrFuture;
         final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
-        if (byteData != null) {
-          final pngBytes = byteData.buffer.asUint8List();
+        // if (byteData != null) {
+        //   final pngBytes = byteData.buffer.asUint8List();
 
-          final result = await ImageGallerySaver.saveImage(
-            pngBytes,
-            quality: 100,
-            name: 'device_${device.uid}_qr_code',
-          );
+        //   final result = await ImageGallerySaver.saveImage(
+        //     pngBytes,
+        //     quality: 100,
+        //     name: 'device_${device.uid}_qr_code',
+        //   );
 
-          Get.back(); // Close loading dialog
+        //   Get.back(); // Close loading dialog
 
-          if (result['isSuccess'] == true) {
-            Get.snackbar(
-              'Success',
-              'QR code saved to gallery',
-              snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: Colors.green,
-              colorText: Colors.white,
-              duration: const Duration(seconds: 2),
-            );
-          } else {
-            Get.snackbar('Error', 'Failed to save QR code');
-          }
-        } else {
-          Get.back();
-          Get.snackbar('Error', 'Failed to generate image data');
-        }
+        //   if (result['isSuccess'] == true) {
+        //     Get.snackbar(
+        //       'Success',
+        //       'QR code saved to gallery',
+        //       snackPosition: SnackPosition.BOTTOM,
+        //       backgroundColor: Colors.green,
+        //       colorText: Colors.white,
+        //       duration: const Duration(seconds: 2),
+        //     );
+        //   } else {
+        //     Get.snackbar('Error', 'Failed to save QR code');
+        //   }
+        // } else {
+        //   Get.back();
+        //   Get.snackbar('Error', 'Failed to generate image data');
+        // }
       } catch (renderError) {
         Get.back();
         print('Render error: $renderError');

@@ -96,3 +96,29 @@ String storedCategoryToString(StoredCategory category) {
       return 'rum';
   }
 }
+
+String storedCategoryBrandToString(StoredCategory category) {
+  switch (category) {
+    case StoredCategory.whiskey:
+      return 'Batavia Whiskey';
+    case StoredCategory.vodka:
+      return 'Smirnoff Green Apple';
+    case StoredCategory.tequila:
+      return 'Jose Quervo';
+    case StoredCategory.rum:
+      return 'Captain Morgan';
+  }
+}
+
+String storedCategoryBottleNameToString(StoredCategory category) {
+  switch (category) {
+    case StoredCategory.whiskey:
+      return 'Batavia Whiskey';
+    case StoredCategory.vodka:
+      return 'Smirnoff Green Apple';
+    case StoredCategory.tequila:
+      return 'Jose Quervo';
+    case StoredCategory.rum:
+      return 'Captain Morgan';
+  }
+}

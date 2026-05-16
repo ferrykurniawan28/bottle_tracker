@@ -24,6 +24,7 @@ class UserController extends GetxController {
   final currentIndex = 0.obs;
   final currentUser = Rxn<UserModel>();
   final unreadNotificationsCount = 0.obs;
+  final isLoading = false.obs;
 
   @override
   void onInit() {
@@ -33,6 +34,7 @@ class UserController extends GetxController {
   }
 
   Future<void> loadData() async {
+    isLoading.value = true;
     int userId = int.tryParse(currentUser.value?.id ?? '0') ?? 0;
     final devicesResult = await _deviceService.getAllDevices();
     allDevices.value = devicesResult.devices ?? [];
@@ -56,6 +58,7 @@ class UserController extends GetxController {
     final notificationsResult = await _notificationService
         .getUnreadNotifications(userId);
     unreadNotificationsCount.value = notificationsResult.notifications ?? 0;
+    isLoading.value = false;
   }
 
   void toggleSelection(String catalogId) {
@@ -119,7 +122,48 @@ class UserController extends GetxController {
   }
 
   void _handleScannedBottle(String bottleId) async {
+    // Show loading dialog
+    Get.dialog(
+      Dialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Scanning...',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+
     final deviceResult = await _deviceService.getDeviceByUID(bottleId);
+
+    // Close loading dialog
+    Get.back();
+
     if (deviceResult.device != null) {
       final device = deviceResult.device!;
       Get.dialog(
@@ -191,11 +235,10 @@ class UserController extends GetxController {
     }
   }
 
-  void _handleUsedDevice(String deviceId) {
+  void _handleUsedDevice(String deviceId) async {
     Get.back();
+    await Future.delayed(const Duration(milliseconds: 300));
 
-    final nameController = TextEditingController();
-    final brandController = TextEditingController();
     StoredCategory? selectedCategory;
 
     Get.dialog(
@@ -222,37 +265,6 @@ class UserController extends GetxController {
                 const SizedBox(height: 16),
                 const Divider(color: AppColors.divider),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Bottle Name',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: AppColors.divider),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: AppColors.primary),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: brandController,
-                  decoration: InputDecoration(
-                    labelText: 'Brand',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: AppColors.divider),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: AppColors.primary),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // ✅ StatefulBuilder so dropdown re-renders on selection
                 StatefulBuilder(
                   builder: (context, setState) {
                     return DropdownButtonFormField<StoredCategory>(
@@ -263,7 +275,13 @@ class UserController extends GetxController {
                         return DropdownMenuItem<StoredCategory>(
                           value: category,
                           child: Text(
-                            category.toString().split('.').last.toUpperCase(),
+                            storedCategoryBottleNameToString(
+                              category,
+                            ).toUpperCase(),
+                            style: GoogleFonts.poppins(
+                              color: AppColors.textPrimary,
+                              fontSize: 14,
+                            ),
                           ),
                         );
                       }).toList(),
@@ -295,30 +313,6 @@ class UserController extends GetxController {
                       child: CustomButton(
                         text: 'Store',
                         onPressed: () async {
-                          if (nameController.text.trim().isEmpty) {
-                            Get.snackbar(
-                              'Error',
-                              'Please enter a bottle name',
-                              backgroundColor: Colors.red.withValues(
-                                alpha: 0.2,
-                              ),
-                              colorText: Colors.red,
-                            );
-                            return;
-                          }
-
-                          if (brandController.text.trim().isEmpty) {
-                            Get.snackbar(
-                              'Error',
-                              'Please enter a brand name',
-                              backgroundColor: Colors.red.withValues(
-                                alpha: 0.2,
-                              ),
-                              colorText: Colors.red,
-                            );
-                            return;
-                          }
-
                           if (selectedCategory == null) {
                             Get.snackbar(
                               'Error',
@@ -334,8 +328,12 @@ class UserController extends GetxController {
                           await _storedService.createStored(
                             deviceUid: deviceId,
                             ownerUid: currentUser.value!.uniqueCode,
-                            bottleName: nameController.text.trim(),
-                            brand: brandController.text.trim(),
+                            bottleName: storedCategoryBottleNameToString(
+                              selectedCategory!,
+                            ),
+                            brand: storedCategoryBrandToString(
+                              selectedCategory!,
+                            ),
                             category: selectedCategory
                                 .toString()
                                 .split('.')
