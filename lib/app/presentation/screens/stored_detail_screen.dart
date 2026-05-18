@@ -251,7 +251,17 @@ class _DetailHeaderCard extends StatelessWidget {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
+                // shows owner name if available, otherwise show null
+                if (stored.ownerName != null)
+                  Text(
+                    'Owner: ${stored.ownerName}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: AppColors.textHint,
+                    ),
+                  ),
+                const SizedBox(height: 4),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,

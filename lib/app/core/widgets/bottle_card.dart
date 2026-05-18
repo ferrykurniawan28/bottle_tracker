@@ -96,6 +96,15 @@ class BottleCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
+                    // Display owner name if available
+                    if (bottle.ownerName != null)
+                      Text(
+                        'Owner: ${bottle.ownerName}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: AppColors.textHint,
+                        ),
+                      ),
                     // Row(
                     //   children: [
                     //     if (bottle.weight != null)

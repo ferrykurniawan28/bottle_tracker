@@ -5,6 +5,7 @@ class StoredModel {
   final int id;
   final int deviceId;
   final int ownerId;
+  final String? ownerName;
   final double? weight;
   final String bottleName;
   final String brand;
@@ -16,6 +17,7 @@ class StoredModel {
     required this.id,
     required this.deviceId,
     required this.ownerId,
+    this.ownerName,
     this.weight,
     required this.bottleName,
     required this.brand,
@@ -48,6 +50,7 @@ class StoredModel {
     bottleName: json['bottle_name'].toString(),
     brand: json['brand'].toString(),
     category: json['category']?.toString(),
+    ownerName: json['username']?.toString(),
     status: json['status']?.toString() ?? 'active',
     createdAt: json['created_at'] is String
         ? DateTime.parse(json['created_at']).toUtcPlus7()
