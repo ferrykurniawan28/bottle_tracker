@@ -164,7 +164,7 @@ class UserController extends GetxController {
     // Close loading dialog
     Get.back();
 
-    if (deviceResult.device != null) {
+    if (deviceResult.success && deviceResult.device != null) {
       final device = deviceResult.device!;
       Get.dialog(
         Dialog(
@@ -227,10 +227,15 @@ class UserController extends GetxController {
       );
     } else {
       Get.snackbar(
-        'Not Found',
-        'No device found with this QR code',
-        backgroundColor: Colors.orange.withValues(alpha: 0.2),
-        colorText: Colors.orange,
+        'Not Available',
+        deviceResult.message.isNotEmpty
+            ? deviceResult.message
+            : 'No device found or device is already in use',
+        backgroundColor: Colors.red.withValues(alpha: 0.2),
+        colorText: Colors.red,
+        snackPosition: SnackPosition.TOP,
+        borderRadius: 16,
+        margin: const EdgeInsets.all(16),
       );
     }
   }
